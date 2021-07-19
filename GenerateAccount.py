@@ -72,4 +72,4 @@ class DbInfoAccount:
 
 if __name__ == '__main__':
     pk = pd.read_csv('db_auth.csv', encoding='windows-1251', sep=';')
-    print(DbInfoAccount().get_auth_info_with_card(2))
+    print(DbInfoAccount().get_auth_info_with_card(1))
