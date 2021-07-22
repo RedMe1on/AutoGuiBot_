@@ -1,6 +1,6 @@
 import pandas as pd
 import random
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from exceptions import OutOfIndexFromDB
 
@@ -27,11 +27,17 @@ class AddressInfo(NamedTuple):
     postcode: str
 
 
+class CompetitionInfo(NamedTuple):
+    page: str
+    sizes: List[str]
+
+
 class DbInfoAccount:
     """get info from file or database for account"""
     db_name = 'db_name.csv'
     db_auth = 'db_auth.csv'
     db_address = 'db_address.csv'
+    db_competition = 'db_competition.csv'
 
     @staticmethod
     def _read_file(file: str, encoding='windows-1251', sep=';'):
@@ -68,8 +74,13 @@ class DbInfoAccount:
         else:
             raise OutOfIndexFromDB('Индекс превышает значения строк в таблице')
 
+    def get_competition_info(self, index: int) -> CompetitionInfo:
+        """Get info about the competition"""
+        competition_db = self._read_file(self.db_competition)
+        sizes = competition_db.at[index, 'size'].split(', ')
+        return CompetitionInfo(page=str(competition_db.at[index, 'page']), sizes=sizes)
 
 
 if __name__ == '__main__':
     pk = pd.read_csv('db_auth.csv', encoding='windows-1251', sep=';')
-    print(DbInfoAccount().get_auth_info_with_card(1))
+    print(DbInfoAccount().get_competition_info(0).sizes[0])

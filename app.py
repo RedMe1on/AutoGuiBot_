@@ -1,9 +1,46 @@
+import datetime
+
 import pyautogui as pag
 import webbrowser
 import time
 import random
+import pandas as pd
+import parse_size
 from GenerateAccount import DbInfoAccount
 from exceptions import WrongDisplaySize
+
+
+class Backup:
+    """Backup class"""
+
+    def __init__(self):
+        self._date = datetime.date.today()
+        self._data = False
+
+    def backup_create(self, data: pd, name_backup: str) -> None:
+        data.to_pickle(f'backup/backup_{name_backup}_{self._date}.p')
+
+    def backup_load(self, name_backup: str) -> pd:
+        return pd.read_pickle(f'backup/backup_{name_backup}_{self._date}.p')
+
+    def backup_check(self, name_backup: str) -> bool:
+        try:
+            self._data = self.backup_load(name_backup)
+            backup = True
+        except FileNotFoundError:
+            backup = False
+        return backup
+
+    def _filter_data(self, data: pd, column_merge: str) -> pd:
+        common = data.merge(self._data, on=column_merge)
+        return data[~data[column_merge].isin(common[column_merge])]
+
+    def merge_backup(self, column_merge: str, name_backup: str, data: pd) -> pd or False:
+        if self.backup_check(name_backup=name_backup):
+            data = self._filter_data(data, column_merge)
+        else:
+            data = False
+        return data
 
 
 class AutoRegistration:
@@ -11,6 +48,7 @@ class AutoRegistration:
     display_size = pag.size()
     db_class = DbInfoAccount()
     main_page = "https://www.endclothing.com/"
+    backup_data = pd.DataFrame(columns=['email'])
 
     @staticmethod
     def click_on_login_button() -> None:
@@ -102,21 +140,28 @@ class AutoRegistration:
         pag.moveTo(random.randint(274, 340), random.randint(630, 635), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
+
         # click on Add New Card
         pag.moveTo(random.randint(1026, 1115), random.randint(676, 677), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(2)
+
         # click on field number card
         pag.moveTo(random.randint(633, 1516), random.randint(625, 645), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
-        card_info = self.db_class.get_auth_info_with_card(index)
-        self.typewrite_and_tab(card_info.card_number)
-        self.typewrite_and_tab(card_info.expires)
-        self.typewrite_and_tab(card_info.security_code)
+        auth_card_info = self.db_class.get_auth_info_with_card(index)
+        self.typewrite_and_tab(auth_card_info.card_number)
+        self.typewrite_and_tab(auth_card_info.expires)
+        self.typewrite_and_tab(auth_card_info.security_code)
         pag.moveTo(random.randint(619, 805), random.randint(781, 831), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
+
+        #backup save
+        self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+        Backup().backup_create(data=self.backup_data, name_backup='registration')
+
         self.log_out()
 
     def log_out(self) -> None:
@@ -126,8 +171,13 @@ class AutoRegistration:
         pag.click()
 
 
-class AutoCompetition(AutoRegistration):
+class AutoRequestCompetition(AutoRegistration):
     """Autoregistr account on endclothing"""
+
+    def __init__(self, competition_index: int):
+        self.competition_info = self.db_class.get_competition_info(competition_index)
+        self.page_competition = self.competition_info.page
+        self.available_sizes = parse_size.get_size_list(self.page_competition)
 
     def log_in(self, index):
         """Login on site"""
@@ -144,10 +194,11 @@ class AutoCompetition(AutoRegistration):
         pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
         pag.press('enter')
 
-    def request_to_competition(self, page: str) -> None:
-        self.load_page(page)
+    def request_to_competition(self, index_account: int) -> None:
+        # self.log_in(index_account)
+        self.load_page(self.page_competition)
 
-        #click to EnterDraw button
+        # click to EnterDraw button
         pag.moveTo(random.randint(831, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
@@ -156,13 +207,29 @@ class AutoCompetition(AutoRegistration):
         pag.moveTo(random.randint(343, 707), random.randint(465, 483), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
+        required_size = self.competition_info.sizes[0]
+        if required_size in self.available_sizes:
+            index = self.available_sizes.index(required_size)
+            if index % 2 == 0:
+                # choose even size option
+                pag.moveTo(random.randint(393, 458), random.randint(523 + 60 * index / 2, 543 + 60 * index / 2),
+                           random.uniform(0.25, 0.5))
+                pag.click()
+                time.sleep(1)
+            else:
+                # choose odd size option
+                pag.moveTo(random.randint(579, 645),
+                           random.randint(523 + 60 * (index - 1) / 2, 543 + 60 * (index - 1) / 2),
+                           random.uniform(0.25, 0.5))
+                pag.click()
+                time.sleep(1)
 
         # click address field
         pag.moveTo(random.randint(770, 1135), random.randint(465, 483), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
 
-        # choose address field
+        # choose address option
         pag.moveTo(random.randint(747, 1136), random.randint(510, 546), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
@@ -172,7 +239,7 @@ class AutoCompetition(AutoRegistration):
         pag.click()
         time.sleep(1)
 
-        # choose payments field
+        # choose payments option
         pag.moveTo(random.randint(741, 1143), random.randint(568, 582), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
@@ -186,11 +253,17 @@ class AutoCompetition(AutoRegistration):
         pag.moveTo(random.randint(789, 1122), random.randint(644, 673), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
+        # backup save
+        auth_card_info = self.db_class.get_auth_info_with_card(index_account)
+        self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+        Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
 
-
+        self.log_out()
 
 
 if __name__ == '__main__':
-    print(pag.size())
-    c = AutoCompetition()
-    c.request_to_competition('https://launches.endclothing.com/product/nike-dunk-low-og-w-dm9467-700')
+    c = AutoRequestCompetition(competition_index=0)
+    c.request_to_competition(index_account=0)
+
+    data = Backup().backup_load(name_backup='request_to_competition')
+    print(data)
