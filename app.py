@@ -7,7 +7,7 @@ import random
 import pandas as pd
 import parse_size
 from GenerateAccount import DbInfoAccount
-from exceptions import WrongDisplaySize
+from exceptions import WrongDisplaySize, WrongSignUp
 
 
 class Backup:
@@ -72,12 +72,29 @@ class AutoRegistration:
         webbrowser.open(site)
         time.sleep(delay)
 
-    def sign_up(self, index: int):
+    @staticmethod
+    def check_screen(image_path: str) -> bool:
+        point = pag.locateOnScreen(image_path)
+        if point:
+            return True
+        else:
+            return False
+
+    def sign_up(self, index: int, repeat=2):
         """Скрипт для прохождения первой регистрации"""
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
+            # if self.check_screen('image_to_check/authbutton.png'):
             self.click_on_login_button()
+                # if self.check_screen('image_to_check/form_auth.png'):
             self.click_on_email_field()
+                # else:
+                #     if repeat == 0:
+                #         raise WrongSignUp('Неудалось найти нужную кнопку на экране, возможно, какая-то ошибка')
+                #     else:
+                #         repeat = repeat - 1
+                #         self.sign_up(index, repeat=repeat)
+
             auth_info = self.db_class.get_auth_info_with_card(index)
             pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
             pag.press('enter')
@@ -93,6 +110,12 @@ class AutoRegistration:
             pag.press('enter')
             time.sleep(10)
             self.add_address_to_account(0)
+            # else:
+            #     if repeat == 0:
+            #         raise WrongSignUp('Неудалось найти нужную кнопку на экране, возможно, какая-то ошибка')
+            #     else:
+            #         repeat = repeat - 1
+            #         self.sign_up(index, repeat=repeat)
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
@@ -158,7 +181,7 @@ class AutoRegistration:
         pag.click()
         time.sleep(1)
 
-        #backup save
+        # backup save
         self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
         Backup().backup_create(data=self.backup_data, name_backup='registration')
 
@@ -210,19 +233,27 @@ class AutoRequestCompetition(AutoRegistration):
         required_size = self.competition_info.sizes[0]
         if required_size in self.available_sizes:
             index = self.available_sizes.index(required_size)
+            scroll_size = 0
             if index % 2 == 0:
                 # choose even size option
-                pag.moveTo(random.randint(393, 458), random.randint(523 + 60 * index / 2, 543 + 60 * index / 2),
-                           random.uniform(0.25, 0.5))
-                pag.click()
-                time.sleep(1)
+                coordinate_correction = 60 * index / 2
+                width = random.randint(393, 458)
+                if index > 17:
+                    scroll_size = 60 * (index - 17)
             else:
                 # choose odd size option
-                pag.moveTo(random.randint(579, 645),
-                           random.randint(523 + 60 * (index - 1) / 2, 543 + 60 * (index - 1) / 2),
-                           random.uniform(0.25, 0.5))
-                pag.click()
-                time.sleep(1)
+                coordinate_correction = 60 * (index - 1) / 2
+                width = random.randint(579, 645)
+                if index > 17:
+                    scroll_size = 60 * (index - (17 + 1))
+
+            pag.scroll(-scroll_size)
+            pag.moveTo(width, random.randint(523 + coordinate_correction - scroll_size,
+                                             543 + coordinate_correction - scroll_size),
+                       random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
+            pag.scroll(scroll_size)
 
         # click address field
         pag.moveTo(random.randint(770, 1135), random.randint(465, 483), random.uniform(0.25, 0.5))

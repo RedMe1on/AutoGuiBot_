@@ -6,3 +6,7 @@ class OutOfIndexFromDB(Exception):
 class WrongDisplaySize(Exception):
     """Exception for wrong size display"""
     pass
+
+class WrongSignUp(Exception):
+    """Exception for wrong sing up"""
+    pass
