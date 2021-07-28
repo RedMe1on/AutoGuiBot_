@@ -7,6 +7,6 @@ class WrongDisplaySize(Exception):
     """Exception for wrong size display"""
     pass
 
-class WrongSignUp(Exception):
+class WrongSearchImage(Exception):
     """Exception for wrong sing up"""
     pass
