@@ -10,6 +10,7 @@ from pyscreeze import Box
 import parse_size
 from GenerateAccount import DbInfoAccount
 from exceptions import WrongDisplaySize, WrongSearchImage
+from mixins import PagMixin
 
 
 class Backup:
@@ -45,57 +46,39 @@ class Backup:
         return data
 
 
-class AutoRegistration:
+class AutoRegistration(PagMixin):
     """Autoregistr account on endclothing"""
     display_size = pag.size()
     db_class = DbInfoAccount()
     main_page = "https://www.endclothing.com/"
     backup_data = pd.DataFrame(columns=['email'])
 
-    @staticmethod
-    def click_on_login_button() -> None:
-        pag.moveTo(367, 175, random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+    def click_on_auth_button(self):
+        return self.click_on_button('image_to_check/authbutton.png')
 
-    @staticmethod
-    def click_on_email_field() -> None:
-        pag.moveTo(random.randint(720, 1187), random.randint(600, 625), random.uniform(0.25, 0.5))
-        pag.click()
+    def click_on_log_out_button(self):
+        return self.click_on_button('image_to_check/log_out_button.png')
 
-    @staticmethod
-    def typewrite_and_tab(field: str, range_random_start=0.1, range_random_end=0.2, tab_presses=1) -> None:
-        pag.typewrite(field, interval=random.uniform(range_random_start, range_random_end))
-        pag.press('tab', presses=tab_presses)
-        time.sleep(1)
+    def click_on_save_button(self):
+        return self.click_on_button('image_to_check/save_button.png')
 
-    @staticmethod
-    def load_page(site: str, delay=7) -> None:
-        webbrowser.open(site)
-        time.sleep(delay)
+    def click_on_form_auth(self):
+        return self.click_on_form_with_field('image_to_check/form_auth.png')
 
-    @staticmethod
-    def search_screen(image_path: str) -> Box:
-        point = pag.locateOnScreen(image_path)
-        return point
+    def click_on_add_card(self):
+        return self.click_on_form_with_field('image_to_check/add_new_card.png')
 
-    @staticmethod
-    def decrement_repeat_counter(repeat):
-        if repeat == 0:
-            raise WrongSearchImage('Неудалось найти нужную кнопку на экране, возможно, какая-то ошибка')
-        else:
-            repeat = repeat - 1
-            return repeat
+    def click_on_account_button(self):
+        return self.click_on_form_with_field('image_to_check/account_button.png')
 
     def sign_up(self, index_account: int, repeat=3):
         """Скрипт для прохождения первой регистрации"""
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
-            if self.search_screen('image_to_check/authbutton.png'):
-                self.click_on_login_button()
-                time.sleep(3)
-                if self.search_screen('image_to_check/form_auth.png'):
-                    self.click_on_email_field()
+            click = self.click_on_auth_button()
+            if click:
+                form_click = self.click_on_form_auth()
+                if form_click:
                     auth_info = self.db_class.get_auth_info_with_card(index_account)
                     pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
                     pag.press('enter')
@@ -126,45 +109,47 @@ class AutoRegistration:
         # time.sleep(random.randint(7, 10))
 
         # click Account button to /account
-        pag.moveTo(random.randint(296, 555), random.randint(219, 252), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(3)
+        account_button = self.click_on_account_button()
+        if account_button:
+            # click to address from left menu
+            pag.moveTo(random.randint(268, 455), random.randint(581, 595), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(3)
+            # add address
+            pag.moveTo(random.randint(1533, 1546), random.randint(435, 440), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(3)
+            # click to field Firstname address
+            pag.moveTo(random.randint(629, 1519), random.randint(612, 629), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
+            pag.hotkey('ctrl', 'a')
+            pag.press('delete')
+            address = self.db_class.get_address(index_account)
+            self.typewrite_and_tab(address.first_name)
+            pag.hotkey('ctrl', 'a')
+            pag.press('delete')
 
-        # click to address from left menu
-        pag.moveTo(random.randint(268, 455), random.randint(581, 595), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(3)
-        # add address
-        pag.moveTo(random.randint(1533, 1546), random.randint(435, 440), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(3)
-        # click to field Firstname address
-        pag.moveTo(random.randint(629, 1519), random.randint(612, 629), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
-        pag.hotkey('ctrl', 'a')
-        pag.press('delete')
-        address = self.db_class.get_address(index_account)
-        self.typewrite_and_tab(address.first_name)
-        pag.hotkey('ctrl', 'a')
-        pag.press('delete')
+            self.typewrite_and_tab(address.last_name)
+            self.typewrite_and_tab(address.contact_number)
+            self.typewrite_and_tab(address.address_line, tab_presses=2)
+            self.typewrite_and_tab(address.town, tab_presses=2)
 
-        self.typewrite_and_tab(address.last_name)
-        self.typewrite_and_tab(address.contact_number)
-        self.typewrite_and_tab(address.address_line, tab_presses=2)
-        self.typewrite_and_tab(address.town, tab_presses=2)
+            pag.typewrite(address.postcode, interval=random.uniform(0.1, 0.2))
+            pag.moveTo(random.randint(625, 776), random.randint(768, 798), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(3)
 
-        pag.typewrite(address.postcode, interval=random.uniform(0.1, 0.2))
-        pag.moveTo(random.randint(625, 776), random.randint(768, 798), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(3)
+            if not self.search_screen('image_to_check/add_address.png'):
+                repeat = self.decrement_repeat_counter(repeat)
+                self.load_page('https://www.endclothing.com/ru/account/')
+                self.add_address_to_account(index_account, repeat=repeat)
 
-        if not self.search_screen('image_to_check/add_address.png'):
+            self.add_card_to_account(index_account)
+        else:
             repeat = self.decrement_repeat_counter(repeat)
-            self.load_page('https://www.endclothing.com/ru/account/')
+            self.click_on_auth_button()
             self.add_address_to_account(index_account, repeat=repeat)
-
-        self.add_card_to_account(index_account)
 
     def add_card_to_account(self, index_account: int, repeat=3) -> None:
         """Добавляет карту в профиль аккаунта"""
@@ -173,13 +158,8 @@ class AutoRegistration:
         pag.click()
         time.sleep(3)
         # click on Add New Card
-        add_new_card_button = self.search_screen('image_to_check/add_new_card.png')
+        add_new_card_button = self.click_on_add_card()
         if add_new_card_button:
-            pag.moveTo(random.randint(add_new_card_button.left, add_new_card_button.left + add_new_card_button.width),
-                       random.randint(add_new_card_button.top, add_new_card_button.top + add_new_card_button.height),
-                       random.uniform(0.25, 0.5))
-            pag.click()
-            time.sleep(3)
             # click on field number card
             pag.moveTo(random.randint(633, 1516), random.randint(625, 645), random.uniform(0.25, 0.5))
             pag.click()
@@ -198,18 +178,19 @@ class AutoRegistration:
 
             self.log_out()
 
-        # if not self.search_screen('image_to_check/card_not_exist.png'):
-        #     pass
-        # else:
-        #     repeat = self.decrement_repeat_counter(repeat)
-        #     self.load_page('https://www.endclothing.com/ru/account')
-        #     self.add_card_to_account(index_account, repeat=repeat)
-
-    def log_out(self) -> None:
+    def log_out(self, repeat=3) -> None:
         self.load_page(self.main_page)
-        self.click_on_login_button()
-        pag.moveTo(random.randint(286, 550), random.randint(274, 318), random.uniform(0.25, 0.5))
-        pag.click()
+        auth_button = self.click_on_auth_button()
+        if auth_button:
+            log_out_button = self.click_on_log_out_button()
+            if not log_out_button:
+                repeat = self.decrement_repeat_counter(repeat)
+                self.load_page('https://www.endclothing.com/ru/')
+                self.log_out(repeat=repeat)
+        else:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/')
+            self.log_out(repeat=repeat)
 
 
 class AutoRequestCompetition(AutoRegistration):
@@ -220,11 +201,14 @@ class AutoRequestCompetition(AutoRegistration):
         self.page_competition = self.competition_info.page
         self.available_sizes = parse_size.get_size_list(self.page_competition)
 
+    def click_on_size_button(self):
+        return self.click_on_button('image_to_check/size_button.png')
+
     def log_in(self, index_account):
         """Login on site"""
         self.load_page(self.main_page)
-        self.click_on_login_button()
-        self.click_on_email_field()
+        self.click_on_account_button()
+        self.click_on_form_auth()
 
         auth_info = self.db_class.get_auth_info_with_card(index_account)
         pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
@@ -239,80 +223,81 @@ class AutoRequestCompetition(AutoRegistration):
         # self.log_in(index_account)
         self.load_page(self.page_competition)
 
-        # click to EnterDraw button
+        # click to EnterDraw button TODO сделать скрол до того места, куда и кнопка прокручивает
         pag.moveTo(random.randint(831, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
 
         # click size field
-        pag.moveTo(random.randint(343, 707), random.randint(465, 483), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
-        required_size = self.competition_info.sizes[0]
-        if required_size in self.available_sizes:
-            index = self.available_sizes.index(required_size)
-            scroll_size = 0
-            if index % 2 == 0:
-                # choose even size option
-                coordinate_correction = 60 * index / 2
-                width = random.randint(393, 458)
-                if index > 17:
-                    scroll_size = 60 * (index - 17)
-            else:
-                # choose odd size option
-                coordinate_correction = 60 * (index - 1) / 2
-                width = random.randint(579, 645)
-                if index > 17:
-                    scroll_size = 60 * (index - (17 + 1))
+        size_button = self.click_on_size_button()
+        if size_button:
+            required_size = self.competition_info.sizes[0]
+            if required_size in self.available_sizes:
+                index = self.available_sizes.index(required_size)
+                scroll_size = 0
+                size_button_coord = self.search_screen('image_to_check/size_button.png')
+                start_y_coordinate = size_button_coord.top + size_button_coord.height + 35
+                if index % 2 == 0:
+                    # choose even size option
+                    coordinate_correction = 60 * index / 2
+                    width = random.randint(393, 458)
+                    if index > 17:
+                        scroll_size = 60 * (index - 17)
+                else:
+                    # choose odd size option
+                    coordinate_correction = 60 * (index - 1) / 2
+                    width = random.randint(579, 645)
+                    if index > 17:
+                        scroll_size = 60 * (index - (17 + 1))
 
-            pag.scroll(-scroll_size)
-            pag.moveTo(width, random.randint(523 + coordinate_correction - scroll_size,
-                                             543 + coordinate_correction - scroll_size),
-                       random.uniform(0.25, 0.5))
+                pag.scroll(-scroll_size)
+                pag.moveTo(width, random.randint(start_y_coordinate + coordinate_correction - scroll_size,
+                                                 start_y_coordinate + 20 + coordinate_correction - scroll_size),
+                           random.uniform(0.25, 0.5))
+                pag.click()
+                time.sleep(1)
+                pag.scroll(scroll_size)
+
+            # click address field
+            pag.moveTo(random.randint(770, 1135), random.randint(465, 483), random.uniform(0.25, 0.5))
             pag.click()
             time.sleep(1)
-            pag.scroll(scroll_size)
 
-        # click address field
-        pag.moveTo(random.randint(770, 1135), random.randint(465, 483), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+            # choose address option
+            pag.moveTo(random.randint(747, 1136), random.randint(510, 546), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
 
-        # choose address option
-        pag.moveTo(random.randint(747, 1136), random.randint(510, 546), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+            # click payments field
+            pag.moveTo(random.randint(1196, 1555), random.randint(465, 483), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
 
-        # click payments field
-        pag.moveTo(random.randint(1196, 1555), random.randint(465, 483), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+            # choose payments option
+            pag.moveTo(random.randint(741, 1143), random.randint(568, 582), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
 
-        # choose payments option
-        pag.moveTo(random.randint(741, 1143), random.randint(568, 582), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+            # click accept checkbox
+            pag.moveTo(random.randint(560, 1287), random.randint(572, 593), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
 
-        # click accept checkbox
-        pag.moveTo(random.randint(560, 1287), random.randint(572, 593), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+            # click button EnterDraw
+            pag.moveTo(random.randint(789, 1122), random.randint(644, 673), random.uniform(0.25, 0.5))
+            pag.click()
+            time.sleep(1)
+            # backup save
+            auth_card_info = self.db_class.get_auth_info_with_card(index_account)
+            self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+            Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
 
-        # click button EnterDraw
-        pag.moveTo(random.randint(789, 1122), random.randint(644, 673), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
-        # backup save
-        auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-        self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-        Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
-
-        self.log_out()
+            self.log_out()
 
 
 if __name__ == '__main__':
     c = AutoRequestCompetition(competition_index=0)
-    c.add_card_to_account(index_account=0)
+    c.request_to_competition(index_account=0)
 
     data = Backup().backup_load(name_backup='request_to_competition')
     print(data)
