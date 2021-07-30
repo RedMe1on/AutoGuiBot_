@@ -10,3 +10,8 @@ class WrongDisplaySize(Exception):
 class WrongSearchImage(Exception):
     """Exception for wrong sing up"""
     pass
+
+class WrongSize(Exception):
+    """Exception for wrong size"""
+    pass
+

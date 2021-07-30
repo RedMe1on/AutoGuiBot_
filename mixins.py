@@ -1,4 +1,5 @@
 import datetime
+from typing import Union
 
 import pyautogui as pag
 import webbrowser
@@ -16,10 +17,10 @@ class PagMixin:
     """Миксин для работы с автоматическим gui для сайта"""
 
     @staticmethod
-    def click_on_x_y(x: int, y: int) -> None:
+    def click_on_x_y(x: int, y: int, time_sleep=1) -> None:
         pag.moveTo(x, y, random.uniform(0.25, 0.5))
         pag.click()
-        time.sleep(1)
+        time.sleep(time_sleep)
 
     @staticmethod
     def typewrite_and_tab(field: str, range_random_start=0.1, range_random_end=0.2, tab_presses=1) -> None:
@@ -54,6 +55,14 @@ class PagMixin:
             return True
         else:
             return False
+
+    def click_and_get_coordinate_button(self, image_path: str, time_sleep=2) -> Union[Box, None]:
+        location = self.search_screen(image_path)
+        if location:
+            self.click_on_x_y(random.randint(location.left + 1, location.left + (location.width - 1)),
+                              random.randint(location.top + 1, location.top + (location.height - 1)))
+            time.sleep(time_sleep)
+        return location
 
     def click_on_form_with_field(self, from_image_path: str) -> bool:
         form = self.search_screen(from_image_path)
