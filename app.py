@@ -6,44 +6,13 @@ import time
 import random
 import pandas as pd
 from pyscreeze import Box
+from tqdm import tqdm
 
 import parse_size
 from GenerateAccount import DbInfoAccount
+from backup import Backup
 from exceptions import WrongDisplaySize, WrongSearchImage, WrongSize
 from mixins import PagMixin
-
-
-class Backup:
-    """Backup class"""
-
-    def __init__(self):
-        self._date = datetime.date.today()
-        self._data = False
-
-    def backup_create(self, data: pd, name_backup: str) -> None:
-        data.to_pickle(f'backup/backup_{name_backup}_{self._date}.p')
-
-    def backup_load(self, name_backup: str) -> pd:
-        return pd.read_pickle(f'backup/backup_{name_backup}_{self._date}.p')
-
-    def backup_check(self, name_backup: str) -> bool:
-        try:
-            self._data = self.backup_load(name_backup)
-            backup = True
-        except FileNotFoundError:
-            backup = False
-        return backup
-
-    def _filter_data(self, data: pd, column_merge: str) -> pd:
-        common = data.merge(self._data, on=column_merge)
-        return data[~data[column_merge].isin(common[column_merge])]
-
-    def merge_backup(self, column_merge: str, name_backup: str, data: pd) -> pd or False:
-        if self.backup_check(name_backup=name_backup):
-            data = self._filter_data(data, column_merge)
-        else:
-            data = False
-        return data
 
 
 class AutoRegistration(PagMixin):
@@ -51,7 +20,6 @@ class AutoRegistration(PagMixin):
     display_size = pag.size()
     db_class = DbInfoAccount()
     main_page = "https://www.endclothing.com/"
-    backup_data = pd.DataFrame(columns=['email'])
 
     def click_on_auth_button(self):
         return self.click_on_button('image_to_check/authbutton.png')
@@ -71,7 +39,7 @@ class AutoRegistration(PagMixin):
     def click_on_account_button(self):
         return self.click_on_form_with_field('image_to_check/account_button.png')
 
-    def sign_up(self, index_account: int, repeat=3):
+    def sign_up(self, account: pd, repeat=3):
         """Скрипт для прохождения первой регистрации"""
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
@@ -79,8 +47,7 @@ class AutoRegistration(PagMixin):
             if click:
                 form_click = self.click_on_form_auth()
                 if form_click:
-                    auth_info = self.db_class.get_auth_info_with_card(index_account)
-                    pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
+                    pag.typewrite(account.email, interval=random.uniform(0.1, 0.2))
                     pag.press('enter')
                     time.sleep(2)
                     pag.press('tab')
@@ -90,20 +57,20 @@ class AutoRegistration(PagMixin):
                     self.typewrite_and_tab(name.first_name)
                     self.typewrite_and_tab(name.last_name)
 
-                    pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
+                    pag.typewrite(account.password, interval=random.uniform(0.1, 0.2))
                     pag.press('enter')
                     time.sleep(10)
                     self.add_address_to_account(0)
                 else:
                     repeat = self.decrement_repeat_counter(repeat)
-                    self.sign_up(index_account, repeat=repeat)
+                    self.sign_up(account, repeat=repeat)
             else:
                 repeat = self.decrement_repeat_counter(repeat)
-                self.sign_up(index_account, repeat=repeat)
+                self.sign_up(account, repeat=repeat)
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
-    def add_address_to_account(self, index_account: int, repeat=3) -> None:
+    def add_address_to_account(self, account: pd, repeat=3) -> None:
         """Добавляет адресс в профиль аккаунта"""
         # webbrowser.open("https://www.endclothing.com/ru/account")
         # time.sleep(random.randint(7, 10))
@@ -120,31 +87,30 @@ class AutoRegistration(PagMixin):
 
             pag.hotkey('ctrl', 'a')
             pag.press('delete')
-            address = self.db_class.get_address(index_account)
-            self.typewrite_and_tab(address.first_name)
+            self.typewrite_and_tab(account.first_name)
             pag.hotkey('ctrl', 'a')
             pag.press('delete')
 
-            self.typewrite_and_tab(address.last_name)
-            self.typewrite_and_tab(address.contact_number)
-            self.typewrite_and_tab(address.address_line, tab_presses=2)
-            self.typewrite_and_tab(address.town, tab_presses=2)
+            self.typewrite_and_tab(account.last_name)
+            self.typewrite_and_tab(account.contact_number)
+            self.typewrite_and_tab(account.address_line, tab_presses=2)
+            self.typewrite_and_tab(account.town, tab_presses=2)
 
-            pag.typewrite(address.postcode, interval=random.uniform(0.1, 0.2))
+            pag.typewrite(account.postcode, interval=random.uniform(0.1, 0.2))
             self.click_on_x_y(random.randint(625, 776), random.randint(768, 798), time_sleep=3)
 
             if not self.search_screen('image_to_check/add_address.png'):
                 repeat = self.decrement_repeat_counter(repeat)
                 self.load_page('https://www.endclothing.com/ru/account/')
-                self.add_address_to_account(index_account, repeat=repeat)
+                self.add_address_to_account(account, repeat=repeat)
 
-            self.add_card_to_account(index_account)
+            self.add_card_to_account(account)
         else:
             repeat = self.decrement_repeat_counter(repeat)
             self.click_on_auth_button()
-            self.add_address_to_account(index_account, repeat=repeat)
+            self.add_address_to_account(account, repeat=repeat)
 
-    def add_card_to_account(self, index_account: int, repeat=3) -> None:
+    def add_card_to_account(self, account: pd, repeat=3) -> None:
         """Добавляет карту в профиль аккаунта"""
         # click on SavedCard on left menu
         self.click_on_x_y(random.randint(274, 340), random.randint(630, 635), time_sleep=3)
@@ -154,17 +120,11 @@ class AutoRegistration(PagMixin):
             # click on field number card
             self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
 
-            auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-            self.typewrite_and_tab(auth_card_info.card_number)
-            self.typewrite_and_tab(auth_card_info.expires)
-            self.typewrite_and_tab(auth_card_info.security_code)
+            self.typewrite_and_tab(account.card_number)
+            self.typewrite_and_tab(account.expires)
+            self.typewrite_and_tab(account.security_code)
 
             self.click_on_x_y(random.randint(619, 805), random.randint(781, 831), time_sleep=2)
-
-            # backup save
-            self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-            Backup().backup_create(data=self.backup_data, name_backup='registration')
-
             self.log_out()
 
     def log_out(self, repeat=3) -> None:
@@ -185,11 +145,6 @@ class AutoRegistration(PagMixin):
 class AutoRequestCompetition(AutoRegistration):
     """Autoregistr account on endclothing"""
 
-    def __init__(self, competition_index: int):
-        self.competition_info = self.db_class.get_competition_info(competition_index)
-        self.page_competition = self.competition_info.page
-        self.available_sizes = parse_size.get_size_list(self.page_competition)
-
     def click_and_get_coord_on_size_button(self):
         return self.click_and_get_coordinate_button('image_to_check/size_button.png')
 
@@ -199,24 +154,23 @@ class AutoRequestCompetition(AutoRegistration):
     def click_and_get_coord_on_payment_button(self):
         return self.click_and_get_coordinate_button('image_to_check/choose_payment.png')
 
-    def log_in(self, index_account):
+    def log_in(self, account: pd):
         """Login on site"""
         self.load_page(self.main_page)
         self.click_on_account_button()
         self.click_on_form_auth()
 
-        auth_info = self.db_class.get_auth_info_with_card(index_account)
-        pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
+        pag.typewrite(account.email, interval=random.uniform(0.1, 0.2))
         pag.press('enter')
         time.sleep(2)
         pag.press('tab')
         time.sleep(1)
-        pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
+        pag.typewrite(account.password, interval=random.uniform(0.1, 0.2))
         pag.press('enter')
 
-    def request_to_competition(self, index_account: int, repeat=3) -> None:
+    def request_to_competition(self, competition: pd, repeat=3) -> None:
         # self.log_in(index_account)
-        self.load_page(self.page_competition)
+        self.load_page(competition.page)
 
         # click to EnterDraw button TODO сделать скрол до того места, куда и кнопка прокручивает
         pag.moveTo(random.randint(831, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
@@ -226,9 +180,10 @@ class AutoRequestCompetition(AutoRegistration):
         # click size field
         size_button = self.click_and_get_coord_on_size_button()
         if size_button:
-            required_size = self.competition_info.sizes[0]
-            if required_size in self.available_sizes:
-                index = self.available_sizes.index(required_size)
+            required_size = competition.sizes[0]
+            available_sizes = parse_size.get_size_list(competition.page)
+            if required_size in available_sizes:
+                index = available_sizes.index(required_size)
                 scroll_size = 0
                 start_y_coordinate = size_button.top + size_button.height + 35
                 if index % 2 == 0:
@@ -249,7 +204,7 @@ class AutoRequestCompetition(AutoRegistration):
                                                         start_y_coordinate + 20 + coordinate_correction - scroll_size))
                 pag.scroll(scroll_size)
             else:
-                raise WrongSize(f'Размер не найден. Доступные размеры: {self.available_sizes}')
+                raise WrongSize(f'Размер не найден. Доступные размеры: {available_sizes}')
             # click address field
             address_button = self.click_and_get_coord_on_address_button()
             if address_button:
@@ -275,7 +230,7 @@ class AutoRequestCompetition(AutoRegistration):
                 time.sleep(1)
             else:
                 repeat = self.decrement_repeat_counter(repeat)
-                self.request_to_competition(index_account=index_account, repeat=repeat)
+                self.request_to_competition(competition=competition, repeat=repeat)
 
             # click accept checkbox
             pag.moveTo(random.randint(560, 1287), random.randint(572, 593), random.uniform(0.25, 0.5))
@@ -287,21 +242,84 @@ class AutoRequestCompetition(AutoRegistration):
             pag.click()
             time.sleep(1)
 
-            # backup save
-            auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-            self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-            Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
+            # # backup save
+            # auth_card_info = self.db_class.get_auth_info_with_card(index_account)
+            # self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+            # Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
 
             self.log_out()
 
         else:
             repeat = self.decrement_repeat_counter(repeat)
-            self.request_to_competition(index_account=index_account, repeat=repeat)
+            self.request_to_competition(competition=competition, repeat=repeat)
+
+
+class AutoRegistrationArrayAccount(AutoRegistration, Backup):
+    backup_data = pd.DataFrame(columns=['email'])
+    _file_output = 'registered_accounts.csv'
+
+    def _to_csv(self) -> None:
+        self._data.to_csv(self._file_output, encoding='utf-8-sig', sep=';', index=False)
+
+    def registration_many_accounts(self):
+        data = self.db_class.read_file(self.db_class.db_auth)
+
+        name_backup = 'request_to_competition'
+        backup_data = self.backup_check(name_backup=name_backup)
+        if backup_data:
+            data = self.merge_data_with_backup(column_merge='email', name_backup=name_backup, data=data)
+        else:
+            backup_data = self.backup_data
+        with tqdm(total=len(data)) as progress_bar:
+            for account in self.db_class.read_file(self.db_class.db_auth).itertuples():
+                try:
+                    self.sign_up(account)
+
+                    # backup save
+                    self.backup_data.append({"email": account.email},
+                                            ignore_index=True)
+                    Backup().backup_create(data=backup_data, name_backup='registration')
+                except Exception as e:
+                    print(f'Не зарегистрировал {account.email}', e)
+                progress_bar.update(1)
+        self._to_csv()
+
+
+class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
+    backup_data = pd.DataFrame(columns=['email'])
+    _file_output = 'requests_competition_accounts.csv'
+
+    def _to_csv(self) -> None:
+        self._data.to_csv(self._file_output, encoding='utf-8-sig', sep=';', index=False)
+
+    def request_many_competition(self):
+        data = self.db_class.read_file(self.db_class.db_auth)
+
+        name_backup = 'request_to_competition'
+        backup_data = self.backup_check(name_backup=name_backup)
+        if backup_data:
+            data = self.merge_data_with_backup(column_merge='email', name_backup=name_backup, data=data)
+        else:
+            backup_data = self.backup_data
+        with tqdm(total=len(data)) as progress_bar:
+            for account in data.itertuples():
+                self.log_in(account=account)
+                for competition in self.db_class.read_file(self.db_class.db_competition).itertuples():
+
+                    self.request_to_competition(account)
+
+                    # backup save
+                    self.backup_data.append({"email": account.email},
+                                            ignore_index=True)
+                    Backup().backup_create(data=backup_data, name_backup='registration')
+                    progress_bar.update(1)
+        self._to_csv()
 
 
 if __name__ == '__main__':
+    reg = AutoRegistration()
     c = AutoRequestCompetition(competition_index=0)
-    c.request_to_competition(index_account=0)
+    c.sign_up(index_account=0)
 
     data = Backup().backup_load(name_backup='request_to_competition')
     print(data)
