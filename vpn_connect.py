@@ -65,5 +65,5 @@ class TouchVPN(PagMixin):
 
 if __name__ == '__main__':
     c = TouchVPN()
-    c.reconnect_in_browser()
+    c.connect_in_browser()
 

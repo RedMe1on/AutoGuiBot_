@@ -20,7 +20,6 @@ class AutoRegistration(PagMixin):
     display_size = pag.size()
     db_class = DbInfoAccount()
     main_page = "https://www.endclothing.com/"
-    backup_data = pd.DataFrame(columns=['email'])
 
     def click_on_auth_button(self):
         return self.click_on_button('image_to_check/authbutton.png')
@@ -38,7 +37,7 @@ class AutoRegistration(PagMixin):
         return self.click_on_form_with_field('image_to_check/add_new_card.png')
 
     def click_on_account_button(self):
-        return self.click_on_form_with_field('image_to_check/account_button.png')
+        return self.click_on_form_with_field('image_to_check/account_button.png', speed=0.5)
 
     def sign_up(self, account: pd, repeat=3):
         """Скрипт для прохождения первой регистрации"""
@@ -57,6 +56,8 @@ class AutoRegistration(PagMixin):
             pag.typewrite(account.email, interval=random.uniform(0.1, 0.2))
             pag.press('enter')
             time.sleep(2)
+            if not self.search_screen('image_to_check/first_name.png'):
+                raise WrongSearchImage('Аккаунт зарегистрирован')
             pag.press('tab')
             time.sleep(1)
 
@@ -89,25 +90,26 @@ class AutoRegistration(PagMixin):
         # add address
         self.click_on_x_y(random.randint(1533, 1546), random.randint(435, 440), time_sleep=3)
         # click to field Firstname address
-        self.click_on_x_y(random.randint(629, 1519), random.randint(612, 629))
+        self.click_on_x_y(random.randint(629, 1519), random.randint(612, 629), time_sleep=2)
 
         pag.hotkey('ctrl', 'a')
         pag.press('delete')
-        self.typewrite_and_tab(account.first_name)
+        self.typewrite_and_tab(str(account.first_name))
         pag.hotkey('ctrl', 'a')
         pag.press('delete')
 
-        self.typewrite_and_tab(account.last_name)
-        self.typewrite_and_tab(account.contact_number)
-        self.typewrite_and_tab(account.address_line, tab_presses=2)
-        self.typewrite_and_tab(account.town, tab_presses=2)
+        self.typewrite_and_tab(str(account.last_name))
+        self.typewrite_and_tab(str(account.contact_number))
+        self.typewrite_and_tab(str(account.address_line), tab_presses=2)
+        self.typewrite_and_tab(str(account.town), tab_presses=2)
 
-        pag.typewrite(account.postcode, interval=random.uniform(0.1, 0.2))
+        pag.typewrite(str(account.postcode), interval=random.uniform(0.1, 0.2))
         self.click_on_x_y(random.randint(625, 776), random.randint(768, 798), time_sleep=3)
 
         if not self.search_screen('image_to_check/add_address.png'):
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/account/')
+            self.click_on_auth_button()
             self.add_address_to_account(account, repeat=repeat)
 
         self.add_card_to_account(account)
@@ -126,9 +128,9 @@ class AutoRegistration(PagMixin):
         # click on field number card
         self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
 
-        self.typewrite_and_tab(account.card_number)
-        self.typewrite_and_tab(account.expires)
-        self.typewrite_and_tab(account.security_code)
+        self.typewrite_and_tab(str(account.card_number)[1:])
+        self.typewrite_and_tab(str(account.expires)[:1])
+        self.typewrite_and_tab(str(account.security_code)[:1])
 
         self.click_on_x_y(random.randint(622, 777), random.randint(800, 831), time_sleep=2)
 
@@ -234,7 +236,7 @@ class AutoRequestCompetition(AutoRegistration):
                                                     start_y_coordinate + 20 + coordinate_correction - scroll_size))
             pag.scroll(scroll_size)
         else:
-            raise WrongSize(f'Размер не найден. Доступные размеры: {self.available_sizes}')
+            raise WrongSize(f'Размер не найден. Доступные размеры: {available_sizes}')
 
         accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
         if not accept_checkbox:
@@ -266,17 +268,15 @@ class AutoRequestCompetition(AutoRegistration):
             repeat = self.decrement_repeat_counter(repeat)
             self.request_to_competition(competition=competition, repeat=repeat)
 
-        # backup save
-        auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-        self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-        Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
         pag.hotkey('ctrl', 'w')
         pag.hotkey('ctrl', 'w')
         self.log_out()
 
 
 class AutoRegistrationArrayAccount(AutoRegistration, Backup):
-    backup_data = pd.DataFrame(columns=['email'])
+    backup_data = pd.DataFrame(
+        columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
+                 'contact_number', 'address_line', 'town', 'postcode'])
     _file_output = 'registered_accounts.csv'
 
     def _to_csv(self) -> None:
@@ -294,11 +294,17 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
         with tqdm(total=len(data)) as progress_bar:
             for account in self.db_class.read_file(self.db_class.db_auth).itertuples():
                 try:
-                    self.sign_up(account)
+                    print(account.email)
+                    self.add_address_to_account(account)
 
                     # backup save
-                    self.backup_data.append({"email": account.email},
-                                            ignore_index=True)
+                    backup_data = backup_data.append(
+                        {"email": account.email, 'password': account.password, 'card_number': account.card_number,
+                         'expires': account.expires, 'security_code': account.security_code,
+                         'first_name': account.security_code, 'last_name': account.security_code,
+                         'contact_number': account.security_code, 'address_line': account.security_code,
+                         'town': account.town, 'postcode': account.postcode},
+                        ignore_index=True)
                     Backup().backup_create(data=backup_data, name_backup='registration')
                 except Exception as e:
                     print(f'Не зарегистрировал {account.email}', e)
@@ -307,7 +313,10 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
 
 
 class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
-    backup_data = pd.DataFrame(columns=['email'])
+    backup_data = pd.DataFrame(
+        columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
+                 'contact_number', 'address_line', 'town', 'postcode', 'number_competition',
+                 'not_request_to_competition'])
     _file_output = 'requests_competition_accounts.csv'
 
     def _to_csv(self) -> None:
@@ -322,25 +331,42 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
             data = self.merge_data_with_backup(column_merge='email', name_backup=name_backup, data=data)
         else:
             backup_data = self.backup_data
+
         with tqdm(total=len(data)) as progress_bar:
             for account in data.itertuples():
-                self.log_in(account=account)
-                for competition in self.db_class.read_file(self.db_class.db_competition).itertuples():
+                try:
+                    self.log_in(account=account)
+                    number_competition = 0
+                    not_request_to_competition = []
+                    for competition in self.db_class.read_file(self.db_class.db_competition).itertuples():
+                        try:
+                            self.request_to_competition(account)
+                            number_competition += 1
+                        except Exception as e:
+                            not_request_to_competition.append(competition.page)
+                            print(f'Не зарегистрировал {account.email} на конкурс {competition}', e)
+                    backup_data = backup_data.append(
+                        {"email": account.email, 'password': account.password,
+                         'card_number': account.card_number,
+                         'expires': account.expires, 'security_code': account.security_code,
+                         'first_name': account.security_code, 'last_name': account.security_code,
+                         'contact_number': account.security_code, 'address_line': account.security_code,
+                         'town': account.town, 'postcode': account.postcode, 'number_competition': number_competition,
+                         'not_request_to_competition': not_request_to_competition},
+                        ignore_index=True)
+                    self.log_out()
 
-                    self.request_to_competition(account)
-
-                    # backup save
-                    self.backup_data.append({"email": account.email},
-                                            ignore_index=True)
                     Backup().backup_create(data=backup_data, name_backup='registration')
                     progress_bar.update(1)
+                except Exception as e:
+                    print(f'Не зарегистрировал {account.email}', e)
+
         self._to_csv()
 
 
 if __name__ == '__main__':
-    reg = AutoRegistration()
-    c = AutoRequestCompetition(competition_index=0)
-    c.sign_up(index_account=0)
+    c = AutoRegistrationArrayAccount()
+    c.registration_many_accounts()
 
     data = Backup().backup_load(name_backup='request_to_competition')
     print(data)

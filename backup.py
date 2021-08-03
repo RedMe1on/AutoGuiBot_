@@ -17,11 +17,11 @@ class Backup:
     def backup_load(self, name_backup: str) -> pd:
         return pd.read_pickle(f'backup/backup_{name_backup}_{self._date}.p')
 
-    def backup_check(self, name_backup: str) -> Union[pd, False]:
+    def backup_check(self, name_backup: str) -> pd:
         try:
             backup = self.backup_load(name_backup)
         except FileNotFoundError:
-            backup = False
+            backup = None
         return backup
 
     def _filter_data(self, data: pd, column_merge: str) -> pd:

@@ -64,11 +64,11 @@ class PagMixin:
             time.sleep(time_sleep)
         return location
 
-    def click_on_form_with_field(self, from_image_path: str) -> bool:
+    def click_on_form_with_field(self, from_image_path: str, speed=0.25) -> bool:
         form = self.search_screen(from_image_path)
         if form:
             # click on form and tab to email field
-            self.click_on_x_y(form.left + 5, form.top + 5)
+            self.click_on_x_y(form.left + 5, form.top + 5, speed=speed)
             pag.press('tab')
             return True
         else:
