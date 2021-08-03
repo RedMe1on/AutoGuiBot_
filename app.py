@@ -51,7 +51,7 @@ class AutoRegistration(PagMixin):
     display_size = pag.size()
     db_class = DbInfoAccount()
     main_page = "https://www.endclothing.com/"
-    backup_data = pd.DataFrame(columns=['email'])
+    backup_data = pd.DataFrame(columns=['email', 'password', 'card', ''])
 
     def click_on_auth_button(self):
         return self.click_on_button('image_to_check/authbutton.png')
@@ -76,30 +76,31 @@ class AutoRegistration(PagMixin):
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
             click = self.click_on_auth_button()
-            if click:
-                form_click = self.click_on_form_auth()
-                if form_click:
-                    auth_info = self.db_class.get_auth_info_with_card(index_account)
-                    pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
-                    pag.press('enter')
-                    time.sleep(2)
-                    pag.press('tab')
-                    time.sleep(1)
-
-                    name = self.db_class.get_first_and_last_name()
-                    self.typewrite_and_tab(name.first_name)
-                    self.typewrite_and_tab(name.last_name)
-
-                    pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
-                    pag.press('enter')
-                    time.sleep(10)
-                    self.add_address_to_account(0)
-                else:
-                    repeat = self.decrement_repeat_counter(repeat)
-                    self.sign_up(index_account, repeat=repeat)
-            else:
+            if not click:
                 repeat = self.decrement_repeat_counter(repeat)
                 self.sign_up(index_account, repeat=repeat)
+
+            form_click = self.click_on_form_auth()
+            if not form_click:
+                repeat = self.decrement_repeat_counter(repeat)
+                self.sign_up(index_account, repeat=repeat)
+
+            auth_info = self.db_class.get_auth_info_with_card(index_account)
+            pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
+            pag.press('enter')
+            time.sleep(2)
+            pag.press('tab')
+            time.sleep(1)
+
+            name = self.db_class.get_first_and_last_name()
+            self.typewrite_and_tab(name.first_name)
+            self.typewrite_and_tab(name.last_name)
+
+            pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
+            pag.press('enter')
+            time.sleep(10)
+            self.add_address_to_account(0)
+
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
@@ -110,76 +111,87 @@ class AutoRegistration(PagMixin):
 
         # click Account button to /account
         account_button = self.click_on_account_button()
-        if account_button:
-            # click to address from left menu
-            self.click_on_x_y(random.randint(268, 455), random.randint(581, 595), time_sleep=2)
-            # add address
-            self.click_on_x_y(random.randint(1533, 1546), random.randint(435, 440), time_sleep=3)
-            # click to field Firstname address
-            self.click_on_x_y(random.randint(629, 1519), random.randint(612, 629))
-
-            pag.hotkey('ctrl', 'a')
-            pag.press('delete')
-            address = self.db_class.get_address(index_account)
-            self.typewrite_and_tab(address.first_name)
-            pag.hotkey('ctrl', 'a')
-            pag.press('delete')
-
-            self.typewrite_and_tab(address.last_name)
-            self.typewrite_and_tab(address.contact_number)
-            self.typewrite_and_tab(address.address_line, tab_presses=2)
-            self.typewrite_and_tab(address.town, tab_presses=2)
-
-            pag.typewrite(address.postcode, interval=random.uniform(0.1, 0.2))
-            self.click_on_x_y(random.randint(625, 776), random.randint(768, 798), time_sleep=3)
-
-            if not self.search_screen('image_to_check/add_address.png'):
-                repeat = self.decrement_repeat_counter(repeat)
-                self.load_page('https://www.endclothing.com/ru/account/')
-                self.add_address_to_account(index_account, repeat=repeat)
-
-            self.add_card_to_account(index_account)
-        else:
+        if not account_button:
             repeat = self.decrement_repeat_counter(repeat)
             self.click_on_auth_button()
             self.add_address_to_account(index_account, repeat=repeat)
+
+        # click to address from left menu
+        self.click_on_x_y(random.randint(268, 455), random.randint(581, 595), time_sleep=2)
+        # add address
+        self.click_on_x_y(random.randint(1533, 1546), random.randint(435, 440), time_sleep=3)
+        # click to field Firstname address
+        self.click_on_x_y(random.randint(629, 1519), random.randint(612, 629))
+
+        pag.hotkey('ctrl', 'a')
+        pag.press('delete')
+        address = self.db_class.get_address(index_account)
+        self.typewrite_and_tab(address.first_name)
+        pag.hotkey('ctrl', 'a')
+        pag.press('delete')
+
+        self.typewrite_and_tab(address.last_name)
+        self.typewrite_and_tab(address.contact_number)
+        self.typewrite_and_tab(address.address_line, tab_presses=2)
+        self.typewrite_and_tab(address.town, tab_presses=2)
+
+        pag.typewrite(address.postcode, interval=random.uniform(0.1, 0.2))
+        self.click_on_x_y(random.randint(625, 776), random.randint(768, 798), time_sleep=3)
+
+        if not self.search_screen('image_to_check/add_address.png'):
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_address_to_account(index_account, repeat=repeat)
+
+        self.add_card_to_account(index_account)
 
     def add_card_to_account(self, index_account: int, repeat=3) -> None:
         """Добавляет карту в профиль аккаунта"""
         # click on SavedCard on left menu
         self.click_on_x_y(random.randint(274, 340), random.randint(630, 635), time_sleep=3)
+
         # click on Add New Card
         add_new_card_button = self.click_on_add_card()
-        if add_new_card_button:
-            # click on field number card
-            self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
+        if not add_new_card_button:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_card_to_account(index_account, repeat=repeat)
 
-            auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-            self.typewrite_and_tab(auth_card_info.card_number)
-            self.typewrite_and_tab(auth_card_info.expires)
-            self.typewrite_and_tab(auth_card_info.security_code)
+        # click on field number card
+        self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
 
-            self.click_on_x_y(random.randint(619, 805), random.randint(781, 831), time_sleep=2)
+        auth_card_info = self.db_class.get_auth_info_with_card(index_account)
+        self.typewrite_and_tab(auth_card_info.card_number)
+        self.typewrite_and_tab(auth_card_info.expires)
+        self.typewrite_and_tab(auth_card_info.security_code)
 
-            # backup save
-            self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-            Backup().backup_create(data=self.backup_data, name_backup='registration')
+        self.click_on_x_y(random.randint(622, 777), random.randint(800, 831), time_sleep=2)
 
-            self.log_out()
+        if not self.search_screen('image_to_check/success_add_card.png'):
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_card_to_account(index_account, repeat=repeat)
+        # backup save
+        self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+        Backup().backup_create(data=self.backup_data, name_backup='registration')
+
+        self.log_out()
 
     def log_out(self, repeat=3) -> None:
         self.load_page(self.main_page)
         auth_button = self.click_on_auth_button()
-        if auth_button:
-            log_out_button = self.click_on_log_out_button()
-            if not log_out_button:
-                repeat = self.decrement_repeat_counter(repeat)
-                self.load_page('https://www.endclothing.com/ru/')
-                self.log_out(repeat=repeat)
-        else:
+        if not auth_button:
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/')
             self.log_out(repeat=repeat)
+
+        log_out_button = self.click_on_log_out_button()
+        if not log_out_button:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/')
+            self.log_out(repeat=repeat)
+        time.sleep(3)
+        pag.hotkey('ctrl', 'w')
 
 
 class AutoRequestCompetition(AutoRegistration):
@@ -199,57 +211,80 @@ class AutoRequestCompetition(AutoRegistration):
     def click_and_get_coord_on_payment_button(self):
         return self.click_and_get_coordinate_button('image_to_check/choose_payment.png')
 
-    def log_in(self, index_account):
+    def click_and_get_coord_on_checkbox_competition(self):
+        return self.click_and_get_coordinate_button('image_to_check/checkbox_competition.png')
+
+    def click_and_get_coord_on_enter_draw(self):
+        return self.click_and_get_coordinate_button('image_to_check/enter_draw_button.png')
+
+    def click_and_get_check_auto_choose_field(self):
+        return self.click_and_get_coordinate_button('image_to_check/check_auto_choose_field.png')
+
+    def log_in(self, index_account: int, repeat=3):
         """Login on site"""
         self.load_page(self.main_page)
-        self.click_on_account_button()
-        self.click_on_form_auth()
+        auth_button = self.click_on_auth_button()
+        if not auth_button:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.log_in(index_account=index_account, repeat=repeat)
+
+        auth_form_button = self.click_on_form_auth()
+        if not auth_form_button:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.log_in(index_account=index_account, repeat=repeat)
 
         auth_info = self.db_class.get_auth_info_with_card(index_account)
-        pag.typewrite(auth_info.email, interval=random.uniform(0.1, 0.2))
+        time.sleep(1)
+        pag.typewrite(auth_info.email, interval=random.uniform(0.2, 0.3))
         pag.press('enter')
         time.sleep(2)
         pag.press('tab')
         time.sleep(1)
-        pag.typewrite(auth_info.password, interval=random.uniform(0.1, 0.2))
+        pag.typewrite(auth_info.password, interval=random.uniform(0.2, 0.3))
         pag.press('enter')
 
     def request_to_competition(self, index_account: int, repeat=3) -> None:
-        # self.log_in(index_account)
+        self.log_in(index_account)
+        time.sleep(3)
         self.load_page(self.page_competition)
 
         # click to EnterDraw button TODO сделать скрол до того места, куда и кнопка прокручивает
-        pag.moveTo(random.randint(831, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
+        pag.moveTo(random.randint(833, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
         pag.click()
         time.sleep(1)
 
         # click size field
         size_button = self.click_and_get_coord_on_size_button()
-        if size_button:
-            required_size = self.competition_info.sizes[0]
-            if required_size in self.available_sizes:
-                index = self.available_sizes.index(required_size)
-                scroll_size = 0
-                start_y_coordinate = size_button.top + size_button.height + 35
-                if index % 2 == 0:
-                    # choose even size option
-                    coordinate_correction = 60 * index / 2
-                    width = random.randint(393, 458)
-                    if index > 17:
-                        scroll_size = 60 * (index - 17)
-                else:
-                    # choose odd size option
-                    coordinate_correction = 60 * (index - 1) / 2
-                    width = random.randint(579, 645)
-                    if index > 17:
-                        scroll_size = 60 * (index - (17 + 1))
-
-                pag.scroll(-scroll_size)
-                self.click_on_x_y(width, random.randint(start_y_coordinate + coordinate_correction - scroll_size,
-                                                        start_y_coordinate + 20 + coordinate_correction - scroll_size))
-                pag.scroll(scroll_size)
+        if not size_button:
+            repeat = self.decrement_repeat_counter(repeat)
+            self.request_to_competition(index_account=index_account, repeat=repeat)
+        required_size = self.competition_info.sizes[0]
+        if required_size in self.available_sizes:
+            index = self.available_sizes.index(required_size)
+            scroll_size = 0
+            start_y_coordinate = size_button.top + size_button.height + 35
+            if index % 2 == 0:
+                # choose even size option
+                coordinate_correction = 60 * index / 2
+                width = random.randint(393, 458)
+                if index > 17:
+                    scroll_size = 60 * (index - 17)
             else:
-                raise WrongSize(f'Размер не найден. Доступные размеры: {self.available_sizes}')
+                # choose odd size option
+                coordinate_correction = 60 * (index - 1) / 2
+                width = random.randint(579, 645)
+                if index > 17:
+                    scroll_size = 60 * (index - (17 + 1))
+
+            pag.scroll(-scroll_size)
+            self.click_on_x_y(width, random.randint(start_y_coordinate + coordinate_correction - scroll_size,
+                                                    start_y_coordinate + 20 + coordinate_correction - scroll_size))
+            pag.scroll(scroll_size)
+        else:
+            raise WrongSize(f'Размер не найден. Доступные размеры: {self.available_sizes}')
+
+        accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
+        if not accept_checkbox:
             # click address field
             address_button = self.click_and_get_coord_on_address_button()
             if address_button:
@@ -258,50 +293,45 @@ class AutoRequestCompetition(AutoRegistration):
                 self.click_on_x_y(
                     random.randint(address_button.left + 5, address_button.left + address_button.width - 5),
                     random.randint(start_y_coordinate, start_y_coordinate + 25))
-            # else:
-            #     repeat = self.decrement_repeat_counter(repeat)
-            #     self.request_to_competition(index_account=index_account, repeat=repeat)
 
             # click payments field
             payment_button = self.click_and_get_coord_on_payment_button()
             if payment_button:
-                pag.moveTo(random.randint(1196, 1555), random.randint(465, 483), random.uniform(0.25, 0.5))
-                pag.click()
-                time.sleep(1)
-
-                # choose payments option
-                pag.moveTo(random.randint(741, 1143), random.randint(568, 582), random.uniform(0.25, 0.5))
-                pag.click()
-                time.sleep(1)
-            else:
+                start_y_coordinate = payment_button.top + payment_button.height + 15
+                self.click_on_x_y(
+                    random.randint(payment_button.left + 5, payment_button.left + payment_button.width - 5),
+                    random.randint(start_y_coordinate, start_y_coordinate + 25))
+            # click accept checkbox
+            accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
+            if not accept_checkbox:
                 repeat = self.decrement_repeat_counter(repeat)
                 self.request_to_competition(index_account=index_account, repeat=repeat)
 
-            # click accept checkbox
-            pag.moveTo(random.randint(560, 1287), random.randint(572, 593), random.uniform(0.25, 0.5))
-            pag.click()
-            time.sleep(1)
-
-            # click button EnterDraw
-            pag.moveTo(random.randint(789, 1122), random.randint(644, 673), random.uniform(0.25, 0.5))
-            pag.click()
-            time.sleep(1)
-
-            # backup save
-            auth_card_info = self.db_class.get_auth_info_with_card(index_account)
-            self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
-            Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
-
-            self.log_out()
-
-        else:
+        # click button EnterDraw
+        enter_draw_button = self.click_and_get_coord_on_enter_draw()
+        if not enter_draw_button:
             repeat = self.decrement_repeat_counter(repeat)
             self.request_to_competition(index_account=index_account, repeat=repeat)
 
+        # backup save
+        auth_card_info = self.db_class.get_auth_info_with_card(index_account)
+        self.backup_data = self.backup_data.append({"email": auth_card_info.email}, ignore_index=True)
+        Backup().backup_create(data=self.backup_data, name_backup='request_to_competition')
+        pag.hotkey('ctrl', 'w')
+        pag.hotkey('ctrl', 'w')
+        self.log_out()
+
+
+def read_file(file: str, encoding='windows-1251', sep=';'):
+    """read file with optional encoding and sep"""
+    return pd.read_csv(file, encoding=encoding, sep=sep)
+
 
 if __name__ == '__main__':
-    c = AutoRequestCompetition(competition_index=0)
-    c.request_to_competition(index_account=0)
+    for competition_index in range(len(read_file('db_competition.csv'))):
+        c = AutoRequestCompetition(competition_index=competition_index)
+        for index_account in range(len(read_file('db_auth.csv'))):
+            c.request_to_competition(index_account=index_account+6)
 
     data = Backup().backup_load(name_backup='request_to_competition')
     print(data)

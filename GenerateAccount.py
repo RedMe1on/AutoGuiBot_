@@ -36,6 +36,7 @@ class DbInfoAccount:
     """get info from file or database for account"""
     db_name = 'db_name.csv'
     db_auth = 'db_auth.csv'
+    db_accounts = 'db_accounts.csv'
     db_address = 'db_address.csv'
     db_competition = 'db_competition.csv'
 

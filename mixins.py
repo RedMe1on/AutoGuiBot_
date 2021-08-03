@@ -17,8 +17,8 @@ class PagMixin:
     """Миксин для работы с автоматическим gui для сайта"""
 
     @staticmethod
-    def click_on_x_y(x: int, y: int, time_sleep=1) -> None:
-        pag.moveTo(x, y, random.uniform(0.25, 0.5))
+    def click_on_x_y(x: int, y: int, time_sleep=1, speed=0.25) -> None:
+        pag.moveTo(x, y, speed)
         pag.click()
         time.sleep(time_sleep)
 
