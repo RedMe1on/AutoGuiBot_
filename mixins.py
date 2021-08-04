@@ -46,6 +46,10 @@ class PagMixin:
             repeat = repeat - 1
             return repeat
 
+    @staticmethod
+    def close_browser_tab() -> None:
+        pag.hotkey('ctrl', 'w')
+
     def click_on_button(self, image_path: str, time_sleep=2) -> bool:
         location = self.search_screen(image_path)
         if location:
