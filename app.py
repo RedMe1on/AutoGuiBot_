@@ -40,6 +40,9 @@ class AutoRegistration(PagMixin):
     def click_on_account_button(self):
         return self.click_on_form_with_field('image_to_check/account_button.png', speed=0.5)
 
+    def check_not_registr_account(self):
+        return self.search_screen('image_to_check/first_name.png')
+
     def sign_up(self, account: pd, repeat=3):
         """Скрипт для прохождения первой регистрации"""
         if self.display_size.width == 1920:
@@ -49,17 +52,23 @@ class AutoRegistration(PagMixin):
                 self.close_browser_tab()
                 repeat = self.decrement_repeat_counter(repeat)
                 self.sign_up(account, repeat=repeat)
-
+                return
+            log_out_button = self.click_on_log_out_button()
+            if log_out_button:
+                self.close_browser_tab()
+                self.sign_up(account, repeat=repeat)
+                return
             form_click = self.click_on_form_auth()
             if not form_click:
                 self.close_browser_tab()
                 repeat = self.decrement_repeat_counter(repeat)
                 self.sign_up(account, repeat=repeat)
+                return
 
             pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
             pag.press('enter')
             time.sleep(2)
-            if not self.search_screen('image_to_check/first_name.png'):
+            if not self.check_not_registr_account():
                 self.close_browser_tab()
                 raise WrongSearchImage('Аккаунт зарегистрирован')
             pag.press('tab')
@@ -73,7 +82,6 @@ class AutoRegistration(PagMixin):
             pag.press('enter')
             time.sleep(10)
             self.add_address_to_account(account)
-
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
@@ -89,6 +97,7 @@ class AutoRegistration(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.click_on_auth_button()
             self.add_address_to_account(account=account, repeat=repeat)
+            return
 
         # click to address from left menu
         self.click_on_x_y(random.randint(268, 455), random.randint(581, 595), time_sleep=2)
@@ -117,6 +126,7 @@ class AutoRegistration(PagMixin):
             self.load_page('https://www.endclothing.com/ru/account/')
             self.click_on_auth_button()
             self.add_address_to_account(account=account, repeat=repeat)
+            return
 
         self.add_card_to_account(account)
 
@@ -131,6 +141,7 @@ class AutoRegistration(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/account/')
             self.add_card_to_account(account=account, repeat=repeat)
+            return
 
         # click on field number card
         self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
@@ -146,6 +157,7 @@ class AutoRegistration(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/account/')
             self.add_card_to_account(account, repeat=repeat)
+            return
 
         self.close_browser_tab()
         self.log_out()
@@ -156,15 +168,17 @@ class AutoRegistration(PagMixin):
         if not auth_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
-            self.load_page('https://www.endclothing.com/ru/')
             self.log_out(repeat=repeat)
-
+            return
+        if self.search_screen('image_to_check/form_auth.png'):
+            self.close_browser_tab()
+            return
         log_out_button = self.click_on_log_out_button()
         if not log_out_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
-            self.load_page('https://www.endclothing.com/ru/')
             self.log_out(repeat=repeat)
+            return
         self.close_browser_tab()
 
 
@@ -183,8 +197,8 @@ class AutoRequestCompetition(AutoRegistration):
     def click_and_get_coord_on_checkbox_competition(self):
         return self.click_and_get_coordinate_button('image_to_check/checkbox_competition.png')
 
-    def click_and_get_coord_on_enter_draw(self):
-        return self.click_and_get_coordinate_button('image_to_check/enter_draw_button.png')
+    def click_and_get_coord_on_enter_draw(self, time_sleep=5):
+        return self.click_and_get_coordinate_button('image_to_check/enter_draw_button.png', time_sleep=time_sleep)
 
     def click_and_get_check_auto_choose_field(self):
         return self.click_and_get_coordinate_button('image_to_check/check_auto_choose_field.png')
@@ -197,24 +211,47 @@ class AutoRequestCompetition(AutoRegistration):
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.log_in(account=account, repeat=repeat)
+            return
+
+        log_out_button = self.click_on_log_out_button()
+        if log_out_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.log_in(account=account, repeat=repeat)
+            return
 
         auth_form_button = self.click_on_form_auth()
         if not auth_form_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.log_in(account=account, repeat=repeat)
+            return
 
-        pag.typewrite(account.email, interval=random.uniform(0.2, 0.3))
+        pag.typewrite(str(account.email), interval=random.uniform(0.2, 0.3))
         pag.press('enter')
         time.sleep(2)
+        if self.check_not_registr_account():
+            # можно доделать, чтобы сразу регистрировал тогда аккаунт этот
+            self.close_browser_tab()
+            raise WrongSearchImage('Аккаунт не зарегистрирован')
+
         pag.press('tab')
         time.sleep(1)
-        pag.typewrite(account.password, interval=random.uniform(0.2, 0.3))
+        pag.typewrite(str(account.password), interval=random.uniform(0.2, 0.3))
         pag.press('enter')
+
+        counter_check = 4
+        account_button = False
+        while counter_check > 0 and not account_button:
+            account_button = self.search_screen('image_to_check/account_button.png')
+            counter_check -= 1
+        if not account_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.log_in(repeat=repeat)
 
     def request_to_competition(self, competition: pd, repeat=3) -> None:
         # self.log_in(index_account)
-        print(str(competition.page))
         self.load_page(str(competition.page))
 
         # click to EnterDraw button TODO сделать скрол до того места, куда и кнопка прокручивает
@@ -228,6 +265,7 @@ class AutoRequestCompetition(AutoRegistration):
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.request_to_competition(competition=competition, repeat=repeat)
+            return
 
         required_size = competition.size
         available_sizes = parse_size.get_size_list(str(competition.page))
@@ -276,18 +314,20 @@ class AutoRequestCompetition(AutoRegistration):
             # click accept checkbox
             accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
             if not accept_checkbox:
+                self.close_browser_tab()
                 repeat = self.decrement_repeat_counter(repeat)
                 self.request_to_competition(competition=competition, repeat=repeat)
+                return
 
         # click button EnterDraw
-        enter_draw_button = self.click_and_get_coord_on_enter_draw()
+        enter_draw_button = self.click_and_get_coord_on_enter_draw(time_sleep=5)
         if not enter_draw_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.request_to_competition(competition=competition, repeat=repeat)
+            return
 
         self.close_browser_tab()
-        self.log_out()
 
 
 class AutoRegistrationArrayAccount(AutoRegistration, Backup):
@@ -303,11 +343,10 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
         data = self.db_class.read_file(self.db_class.db_auth)
 
         name_backup = 'request_to_competition'
-        backup_data = self.backup_check(name_backup=name_backup)
-        if backup_data:
-            data = self.merge_data_with_backup(column_merge='email', name_backup=name_backup, data=data)
-        else:
-            backup_data = self.backup_data
+        backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
+        if not backup_data.empty:
+            data = self.filter_data(column_merge='email', data=data, backup_data=backup_data)
+
         with tqdm(total=len(data)) as progress_bar:
             vpn = TouchVPN()
             vpn.connect_in_browser()
@@ -319,17 +358,18 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
                     vpn.reconnect_in_browser()
                 try:
                     self.sign_up(account)
+
+                    # backup save
+                    backup_data = backup_data.append(
+                        {"email": account.email, 'password': account.password, 'card_number': account.card_number,
+                         'expires': account.expires, 'security_code': account.security_code,
+                         'first_name': account.first_name, 'last_name': account.last_name,
+                         'contact_number': account.contact_number, 'address_line': account.address_line,
+                         'town': account.town, 'postcode': account.postcode},
+                        ignore_index=True)
+                    Backup().backup_create(data=backup_data, name_backup='registration')
                 except Exception as e:
                     print(f'Не зарегистрировал {account.email}:', e)
-                # backup save
-                backup_data = backup_data.append(
-                    {"email": account.email, 'password': account.password, 'card_number': account.card_number,
-                     'expires': account.expires, 'security_code': account.security_code,
-                     'first_name': account.first_name, 'last_name': account.last_name,
-                     'contact_number': account.contact_number, 'address_line': account.address_line,
-                     'town': account.town, 'postcode': account.postcode},
-                    ignore_index=True)
-                Backup().backup_create(data=backup_data, name_backup='registration')
                 progress_bar.update(1)
 
             vpn.disconnect()
@@ -350,11 +390,9 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
         data = self.db_class.read_file(self.db_class.db_auth)
 
         name_backup = 'request_to_competition'
-        backup_data = self.backup_check(name_backup=name_backup)
-        if backup_data:
-            data = self.merge_data_with_backup(column_merge='email', name_backup=name_backup, data=data)
-        else:
-            backup_data = self.backup_data
+        backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
+        if not backup_data.empty:
+            data = self.filter_data(column_merge='email', data=data, backup_data=backup_data)
 
         with tqdm(total=len(data)) as progress_bar:
             vpn = TouchVPN()
@@ -367,9 +405,8 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                     number_competition = 0
                     not_request_to_competition = []
                     for competition in self.db_class.read_file(self.db_class.db_competition).itertuples():
-                        print(competition.page)
                         try:
-                            self.request_to_competition(competition)
+                            self.request_to_competition(competition, repeat=1)
                             self.close_browser_tab()
                             number_competition += 1
                         except Exception as e:
@@ -384,7 +421,7 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                          'town': account.town, 'postcode': account.postcode, 'number_competition': number_competition,
                          'not_request_to_competition': not_request_to_competition},
                         ignore_index=True)
-                    Backup().backup_create(data=backup_data, name_backup='registration')
+                    Backup().backup_create(data=backup_data, name_backup='request_to_competition')
 
                     self.log_out()
                     progress_bar.update(1)
@@ -397,6 +434,3 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
 if __name__ == '__main__':
     c = AutoRequestArrayCompetition()
     c.request_many_competition()
-
-    data = Backup().backup_load(name_backup='request_to_competition')
-    print(data)
