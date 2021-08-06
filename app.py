@@ -227,7 +227,7 @@ class AutoRequestCompetition(AutoRegistration):
             self.log_in(account=account, repeat=repeat)
             return
 
-        pag.typewrite(str(account.email), interval=random.uniform(0.2, 0.3))
+        pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
         time.sleep(2)
         if self.check_not_registr_account():
@@ -237,7 +237,7 @@ class AutoRequestCompetition(AutoRegistration):
 
         pag.press('tab')
         time.sleep(1)
-        pag.typewrite(str(account.password), interval=random.uniform(0.2, 0.3))
+        pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
 
         counter_check = 4
@@ -248,7 +248,26 @@ class AutoRequestCompetition(AutoRegistration):
         if not account_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
-            self.log_in(repeat=repeat)
+            self.log_in(repeat=repeat, account=account)
+
+    def choose_address(self):
+        # click address field
+        address_button = self.click_and_get_coord_on_address_button()
+        if address_button:
+            # choose address option
+            start_y_coordinate = address_button.top + address_button.height + 15
+            self.click_on_x_y(
+                random.randint(address_button.left + 5, address_button.left + address_button.width - 5),
+                random.randint(start_y_coordinate, start_y_coordinate + 25))
+
+    def choose_payment(self):
+        # click payments field
+        payment_button = self.click_and_get_coord_on_payment_button()
+        if payment_button:
+            start_y_coordinate = payment_button.top + payment_button.height + 15
+            self.click_on_x_y(
+                random.randint(payment_button.left + 5, payment_button.left + payment_button.width - 5),
+                random.randint(start_y_coordinate, start_y_coordinate + 25))
 
     def request_to_competition(self, competition: pd, repeat=3) -> None:
         # self.log_in(index_account)
@@ -295,29 +314,17 @@ class AutoRequestCompetition(AutoRegistration):
 
         accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
         if not accept_checkbox:
-            # click address field
-            address_button = self.click_and_get_coord_on_address_button()
-            if address_button:
-                # choose address option
-                start_y_coordinate = address_button.top + address_button.height + 15
-                self.click_on_x_y(
-                    random.randint(address_button.left + 5, address_button.left + address_button.width - 5),
-                    random.randint(start_y_coordinate, start_y_coordinate + 25))
-
-            # click payments field
-            payment_button = self.click_and_get_coord_on_payment_button()
-            if payment_button:
-                start_y_coordinate = payment_button.top + payment_button.height + 15
-                self.click_on_x_y(
-                    random.randint(payment_button.left + 5, payment_button.left + payment_button.width - 5),
-                    random.randint(start_y_coordinate, start_y_coordinate + 25))
-            # click accept checkbox
+            self.choose_address()
             accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
             if not accept_checkbox:
-                self.close_browser_tab()
-                repeat = self.decrement_repeat_counter(repeat)
-                self.request_to_competition(competition=competition, repeat=repeat)
-                return
+                self.choose_payment()
+                # click accept checkbox
+                accept_checkbox = self.click_and_get_coord_on_checkbox_competition()
+                if not accept_checkbox:
+                    self.close_browser_tab()
+                    repeat = self.decrement_repeat_counter(repeat)
+                    self.request_to_competition(competition=competition, repeat=repeat)
+                    return
 
         # click button EnterDraw
         enter_draw_button = self.click_and_get_coord_on_enter_draw(time_sleep=5)
@@ -396,9 +403,13 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
 
         with tqdm(total=len(data)) as progress_bar:
             vpn = TouchVPN()
-            # vpn.connect_in_browser()
+            vpn.connect_in_browser()
 
+            index = 0
             for account in data.itertuples():
+                index += 1
+                if index % 2 == 0:
+                    vpn.reconnect_in_browser()
                 try:
                     self.log_in(account=account)
 
@@ -432,5 +443,5 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
 
 
 if __name__ == '__main__':
-    c = AutoRequestArrayCompetition()
-    c.request_many_competition()
+    c = AutoRegistrationArrayAccount()
+    c.registration_many_accounts()
