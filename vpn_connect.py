@@ -48,11 +48,11 @@ class TouchVPN(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.reconnect_in_browser(repeat=repeat)
 
-        counter_check = 4
+        time_sleep = 4
         connect_vpn_button = False
-        while counter_check > 0 and not connect_vpn_button:
+        while time_sleep > 0 and not connect_vpn_button:
             connect_vpn_button = self.click_and_get_coordinate_button('image_to_check/connect_touch_vpn.png')
-            counter_check -= 1
+            time_sleep -= 1
         if not connect_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
