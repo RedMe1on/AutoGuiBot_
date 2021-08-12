@@ -34,19 +34,32 @@ class AutoRegistration(PagMixin):
     def click_on_form_auth(self):
         return self.click_on_form_with_field('image_to_check/form_auth.png')
 
+    def click_on_address_form(self):
+        return self.click_on_form_with_field('image_to_check/address_form.png')
+
+    def click_on_card_form(self):
+        return self.click_on_form_with_field('image_to_check/card_form.png')
+
     def click_on_add_card(self):
-        return self.click_on_form_with_field('image_to_check/add_new_card.png')
+        return self.click_on_button('image_to_check/add_new_card.png')
 
     def click_on_account_button(self):
-        return self.click_on_form_with_field('image_to_check/account_button.png', speed=0.5)
+        return self.click_on_button('image_to_check/account_button.png')
 
-    def check_not_registr_account(self):
-        return self.search_screen('image_to_check/first_name.png')
+    def click_on_left_menu_address(self):
+        return self.click_on_button('image_to_check/left_menu_address.png')
 
-    def sign_up(self, account: pd, repeat=3):
+    def click_on_left_menu_card(self):
+        return self.click_on_button('image_to_check/left_menu_card.png')
+
+    def click_on_add_address(self):
+        return self.click_on_button('image_to_check/add_address.png')
+
+    def sign_up(self, account: pd, repeat=2):
         """Скрипт для прохождения первой регистрации"""
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
+
             click = self.click_on_auth_button()
             if not click:
                 self.close_browser_tab()
@@ -67,12 +80,13 @@ class AutoRegistration(PagMixin):
 
             pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
             pag.press('enter')
-            time.sleep(2)
-            if not self.check_not_registr_account():
+            time.sleep(1)
+            first_name_field = self.custom_delay(image_path='image_to_check/first_name.png', delay=3)
+            if not first_name_field:
                 self.close_browser_tab()
                 raise WrongSearchImage('Аккаунт зарегистрирован')
             pag.press('tab')
-            time.sleep(1)
+            # time.sleep(1)
 
             name = self.db_class.get_first_and_last_name()
             self.typewrite_and_tab(name.first_name)
@@ -80,36 +94,56 @@ class AutoRegistration(PagMixin):
 
             pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
             pag.press('enter')
-            time.sleep(10)
+
             self.add_address_to_account(account)
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
-    def add_address_to_account(self, account: pd, repeat=3) -> None:
+    def add_address_to_account(self, account: pd, repeat=5) -> None:
         """Добавляет адресс в профиль аккаунта"""
         # webbrowser.open("https://www.endclothing.com/ru/account")
         # time.sleep(random.randint(7, 10))
 
         # click Account button to /account
-        account_button = self.click_on_account_button()
+        account_button = self.custom_delay(image_path='image_to_check/account_button.png')
         if not account_button:
+
+            return
+        else:
+            self.click_on_x_y(x=account_button.left + 3, y=account_button.top + 3)
+
+        # click to address from left menu
+        left_menu_address = self.click_on_left_menu_address()
+        if not left_menu_address:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
+            self.load_page(self.main_page)
             self.click_on_auth_button()
             self.add_address_to_account(account=account, repeat=repeat)
             return
 
-        # click to address from left menu
-        self.click_on_x_y(random.randint(268, 455), random.randint(581, 595), time_sleep=2)
         # add address
-        self.click_on_x_y(random.randint(1533, 1546), random.randint(435, 440), time_sleep=3)
-        # click to field Firstname address
-        self.click_on_x_y(random.randint(629, 1519), random.randint(612, 629), time_sleep=2)
+        add_address = self.click_on_add_address()
+        if not add_address:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page(self.main_page)
+            self.click_on_auth_button()
+            self.add_address_to_account(account=account, repeat=repeat)
+            return
 
-        pag.hotkey('ctrl', 'a')
+        # click to field Firstname address
+        address_form = self.click_on_address_form()
+        if not address_form:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page(self.main_page)
+            self.click_on_auth_button()
+            self.add_address_to_account(account=account, repeat=repeat)
+            return
+
         pag.press('delete')
         self.typewrite_and_tab(str(account.first_name))
-        pag.hotkey('ctrl', 'a')
         pag.press('delete')
 
         self.typewrite_and_tab(str(account.last_name))
@@ -118,9 +152,18 @@ class AutoRegistration(PagMixin):
         self.typewrite_and_tab(str(account.town), tab_presses=2)
 
         pag.typewrite(str(account.postcode), interval=random.uniform(0.1, 0.2))
-        self.click_on_x_y(random.randint(625, 776), random.randint(768, 798), time_sleep=3)
 
-        if not self.search_screen('image_to_check/add_address.png'):
+        save_button = self.click_on_save_button()
+        if not save_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page(self.main_page)
+            self.click_on_auth_button()
+            self.add_address_to_account(account=account, repeat=repeat)
+            return
+
+        success_add_address = self.custom_delay('image_to_check/success_add_address.png')
+        if not success_add_address:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/account/')

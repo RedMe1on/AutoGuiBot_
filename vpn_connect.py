@@ -1,3 +1,5 @@
+from typing import Union
+
 import pyautogui as pag
 import webbrowser
 import time
@@ -14,86 +16,94 @@ class TouchVPN(PagMixin):
     def click_active_touch_vpn_button(self):
         return self.click_and_get_coordinate_button('image_to_check/active_touch_vpn.png')
 
-    def connect_in_browser(self, repeat=5) -> bool:
-        self.load_page('https://www.google.com/', delay=3)
+    def open_google_page(self):
+        self.load_page('https://www.google.com/', logo='image_to_check/logo_google.png')
+
+    def connect_in_browser(self, repeat=5) -> None:
+        self.open_google_page()
+
         vpn_button = self.click_touch_vpn_button()
         if not vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.connect_in_browser(repeat=repeat)
+            return
         # click connect touch vpn
-        self.click_on_x_y(x=1462, y=369)
-        time_sleep = 4
-        stop_vpn_button = False
-        while time_sleep > 0 and not stop_vpn_button:
-            stop_vpn_button = self.search_screen('image_to_check/stop_vpn.png')
-            time_sleep -= 1
+        connect_vpn_button = self.click_and_get_coordinate_button('image_to_check/connect_touch_vpn.png')
+        if not connect_vpn_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.connect_in_browser(repeat=repeat)
+            return
+        stop_vpn_button = self.custom_delay(image_path='image_to_check/stop_vpn.png')
         if not stop_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.connect_in_browser(repeat=repeat)
-        return True
+            return
 
     def reconnect_in_browser(self, repeat=5):
-        self.load_page('https://www.google.com/', delay=3)
+        self.open_google_page()
+
         active_vpn_button = self.click_active_touch_vpn_button()
         if not active_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.reconnect_in_browser(repeat=repeat)
+            return
 
         stop_vpn_button = self.click_and_get_coordinate_button('image_to_check/stop_vpn.png')
         if not stop_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.reconnect_in_browser(repeat=repeat)
+            return
 
-        time_sleep = 4
-        connect_vpn_button = False
-        while time_sleep > 0 and not connect_vpn_button:
-            connect_vpn_button = self.click_and_get_coordinate_button('image_to_check/connect_touch_vpn.png')
-            time_sleep -= 1
+        connect_vpn_button = self.custom_delay(image_path='image_to_check/connect_touch_vpn.png')
         if not connect_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.reconnect_in_browser(repeat=repeat)
+            return
 
-        counter_check = 4
-        while counter_check > 0 and not stop_vpn_button:
-            stop_vpn_button = self.search_screen('image_to_check/stop_vpn.png')
-            counter_check -= 1
+        self.click_on_x_y(x=connect_vpn_button.left + 10, y=connect_vpn_button.top + 5)
+
+        stop_vpn_button = self.custom_delay(image_path='image_to_check/stop_vpn.png')
         if not stop_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
-            self.connect_in_browser(repeat=repeat)
+            self.reconnect_in_browser(repeat=repeat)
+            return
         self.close_browser_tab()
 
     def disconnect(self, repeat=3):
-        self.load_page('https://www.google.com/', delay=3)
+        self.open_google_page()
+
         active_vpn_button = self.click_active_touch_vpn_button()
         if not active_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.disconnect(repeat=repeat)
+            return
 
         stop_vpn_button = self.click_and_get_coordinate_button('image_to_check/stop_vpn.png')
         if not stop_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.disconnect(repeat=repeat)
+            return
 
-        counter_check = 4
-        connect_vpn_button = False
-        while counter_check > 0 and not connect_vpn_button:
-            connect_vpn_button = self.search_screen('image_to_check/connect_touch_vpn.png')
-            counter_check -= 1
+        connect_vpn_button = self.custom_delay(image_path='image_to_check/connect_touch_vpn.png')
         if not connect_vpn_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.disconnect(repeat=repeat)
+            return
         self.close_browser_tab()
 
 
 if __name__ == '__main__':
     c = TouchVPN()
-    c.connect_in_browser()
+
+    c.reconnect_in_browser()
+    c.disconnect()

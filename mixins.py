@@ -29,13 +29,8 @@ class PagMixin:
         time.sleep(1)
 
     @staticmethod
-    def load_page(site: str, delay=7) -> None:
-        webbrowser.open(site)
-        time.sleep(delay)
-
-    @staticmethod
     def search_screen(image_path: str) -> Box:
-        point = pag.locateOnScreen(image_path)
+        point = pag.locateOnScreen(image_path, confidence=0.8)
         return point
 
     @staticmethod
@@ -50,11 +45,24 @@ class PagMixin:
     def close_browser_tab() -> None:
         pag.hotkey('ctrl', 'w')
 
+    def load_page(self, page: str, logo='image_to_check/logo_site.png') -> None:
+        webbrowser.open(page)
+        self.custom_delay(logo)
+
+    def custom_delay(self, image_path: str, delay=10):
+        """Optimized delay for image"""
+        button = None
+        while delay > 0 and not button:
+            button = self.search_screen(image_path)
+            time.sleep(1)
+            delay -= 1
+        return button
+
     def click_on_button(self, image_path: str, time_sleep=2) -> bool:
         location = self.search_screen(image_path)
         if location:
             self.click_on_x_y(random.randint(location.left + 1, location.left + (location.width - 1)),
-                              random.randint(location.top + 1, location.top + (location.height - 1)))
+                              random.randint(location.top - 1, location.top - (location.height - 1)))
             time.sleep(time_sleep)
             return True
         else:
