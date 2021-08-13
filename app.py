@@ -105,9 +105,13 @@ class AutoRegistration(PagMixin):
         # time.sleep(random.randint(7, 10))
 
         # click Account button to /account
-        account_button = self.custom_delay(image_path='image_to_check/account_button.png')
+        account_button = self.custom_delay(image_path='image_to_check/account_button.png', delay=5)
         if not account_button:
-
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page(self.main_page)
+            self.click_on_auth_button()
+            self.add_address_to_account(account=account, repeat=repeat)
             return
         else:
             self.click_on_x_y(x=account_button.left + 3, y=account_button.top + 3)
@@ -162,7 +166,7 @@ class AutoRegistration(PagMixin):
             self.add_address_to_account(account=account, repeat=repeat)
             return
 
-        success_add_address = self.custom_delay('image_to_check/success_add_address.png')
+        success_add_address = self.custom_delay('image_to_check/success_add_address.png', delay=6)
         if not success_add_address:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
@@ -175,8 +179,14 @@ class AutoRegistration(PagMixin):
 
     def add_card_to_account(self, account: pd, repeat=2) -> None:
         """Добавляет карту в профиль аккаунта"""
-        # click on SavedCard on left menu
-        self.click_on_x_y(random.randint(274, 340), random.randint(630, 635), time_sleep=3)
+        card_left_menu_button = self.click_on_left_menu_card()
+        if not card_left_menu_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_card_to_account(account=account, repeat=repeat)
+            return
+
         # click on Add New Card
         add_new_card_button = self.click_on_add_card()
         if not add_new_card_button:
@@ -187,15 +197,28 @@ class AutoRegistration(PagMixin):
             return
 
         # click on field number card
-        self.click_on_x_y(random.randint(633, 1516), random.randint(625, 645))
+        card_form = self.click_on_card_form()
+        if not card_form:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_card_to_account(account=account, repeat=repeat)
+            return
 
         self.typewrite_and_tab(str(account.card_number)[1:])
         self.typewrite_and_tab(str(account.expires)[1:])
         self.typewrite_and_tab(str(account.security_code)[1:])
 
-        self.click_on_x_y(random.randint(622, 777), random.randint(800, 831), time_sleep=8)
+        save_button = self.click_on_save_button()
+        if not save_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.load_page('https://www.endclothing.com/ru/account/')
+            self.add_card_to_account(account=account, repeat=repeat)
+            return
 
-        if not self.search_screen('image_to_check/success_add_card.png'):
+        success_add_card = self.custom_delay(image_path='image_to_check/success_add_card.png')
+        if not success_add_card:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.load_page('https://www.endclothing.com/ru/account/')
@@ -213,9 +236,12 @@ class AutoRegistration(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.log_out(repeat=repeat)
             return
-        if self.search_screen('image_to_check/form_auth.png'):
+
+        form_auth = self.custom_delay(image_path='image_to_check/form_auth.png', delay=4)
+        if form_auth:
             self.close_browser_tab()
             return
+
         log_out_button = self.click_on_log_out_button()
         if not log_out_button:
             self.close_browser_tab()
@@ -272,22 +298,18 @@ class AutoRequestCompetition(AutoRegistration):
 
         pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
-        time.sleep(2)
-        if self.check_not_registr_account():
+        time.sleep(1)
+        check_not_registr_account = self.custom_delay('image_to_check/first_name.png', delay=5)
+        if check_not_registr_account:
             # можно доделать, чтобы сразу регистрировал тогда аккаунт этот
             self.close_browser_tab()
             raise WrongSearchImage('Аккаунт не зарегистрирован')
 
         pag.press('tab')
-        time.sleep(1)
         pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
 
-        counter_check = 4
-        account_button = False
-        while counter_check > 0 and not account_button:
-            account_button = self.search_screen('image_to_check/account_button.png')
-            counter_check -= 1
+        account_button = self.custom_delay(image_path='image_to_check/account_button.png', delay=5)
         if not account_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
@@ -314,12 +336,18 @@ class AutoRequestCompetition(AutoRegistration):
 
     def request_to_competition(self, competition: pd, repeat=3) -> None:
         # self.log_in(index_account)
-        self.load_page(str(competition.page))
+        self.load_page(competition.page)
 
-        # click to EnterDraw button TODO сделать скрол до того места, куда и кнопка прокручивает
-        pag.moveTo(random.randint(831, 1073), random.randint(994, 1025), random.uniform(0.25, 0.5))
-        pag.click()
-        time.sleep(1)
+        # click to EnterDraw button on centre screen
+        chat_widjet = self.custom_delay('image_to_check/chat_widjet.png', delay=4)
+        if not chat_widjet:
+            chat_widjet = self.custom_delay('image_to_check/open_chat.png', delay=4)
+            if not chat_widjet:
+                self.close_browser_tab()
+                repeat = self.decrement_repeat_counter(repeat)
+                self.request_to_competition(competition=competition, repeat=repeat)
+                return
+        self.click_on_x_y(x=chat_widjet.left / 2, y=chat_widjet.top + 3)
 
         # click size field
         size_button = self.click_and_get_coord_on_size_button()
