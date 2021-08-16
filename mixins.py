@@ -29,8 +29,8 @@ class PagMixin:
         time.sleep(1)
 
     @staticmethod
-    def search_screen(image_path: str) -> Box:
-        point = pag.locateOnScreen(image_path, confidence=0.8)
+    def search_screen(image_path: str, confidence=0.8) -> Box:
+        point = pag.locateOnScreen(image_path, confidence=confidence)
         return point
 
     @staticmethod
@@ -62,14 +62,14 @@ class PagMixin:
         location = self.search_screen(image_path)
         if location:
             self.click_on_x_y(random.randint(location.left + 1, location.left + (location.width - 1)),
-                              random.randint(location.top - 1, location.top - (location.height - 1)))
+                              random.randint(location.top + 1, location.top + (location.height - 1)))
             time.sleep(time_sleep)
             return True
         else:
             return False
 
-    def click_and_get_coordinate_button(self, image_path: str, time_sleep=2) -> Union[Box, None]:
-        location = self.search_screen(image_path)
+    def click_and_get_coordinate_button(self, image_path: str, time_sleep=2, confidence=0.8) -> Union[Box, None]:
+        location = self.search_screen(image_path, confidence=confidence)
         if location:
             self.click_on_x_y(random.randint(location.left + 1, location.left + (location.width - 1)),
                               random.randint(location.top + 1, location.top + (location.height - 1)))

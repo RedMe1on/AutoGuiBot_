@@ -1,11 +1,9 @@
 import datetime
 
 import pyautogui as pag
-import webbrowser
 import time
 import random
 import pandas as pd
-from pyscreeze import Box
 from tqdm import tqdm
 
 import parse_size
@@ -237,17 +235,15 @@ class AutoRegistration(PagMixin):
             self.log_out(repeat=repeat)
             return
 
-        form_auth = self.custom_delay(image_path='image_to_check/form_auth.png', delay=4)
-        if form_auth:
-            self.close_browser_tab()
-            return
+        form_auth = self.custom_delay(image_path='image_to_check/form_auth.png', delay=2)
+        if not form_auth:
+            log_out_button = self.click_on_log_out_button()
+            if not log_out_button:
+                self.close_browser_tab()
+                repeat = self.decrement_repeat_counter(repeat)
+                self.log_out(repeat=repeat)
+                return
 
-        log_out_button = self.click_on_log_out_button()
-        if not log_out_button:
-            self.close_browser_tab()
-            repeat = self.decrement_repeat_counter(repeat)
-            self.log_out(repeat=repeat)
-            return
         self.close_browser_tab()
 
 
@@ -264,7 +260,7 @@ class AutoRequestCompetition(AutoRegistration):
         return self.click_and_get_coordinate_button('image_to_check/choose_payment.png')
 
     def click_and_get_coord_on_checkbox_competition(self):
-        return self.click_and_get_coordinate_button('image_to_check/checkbox_competition.png')
+        return self.click_and_get_coordinate_button('image_to_check/checkbox_competition.png', confidence=0.92)
 
     def click_and_get_coord_on_enter_draw(self, time_sleep=5):
         return self.click_and_get_coordinate_button('image_to_check/enter_draw_button.png', time_sleep=time_sleep)
@@ -274,13 +270,17 @@ class AutoRequestCompetition(AutoRegistration):
 
     def log_in(self, account: pd, repeat=3):
         """Login on site"""
+        print('log_in', datetime.datetime.now())
         self.load_page(self.main_page)
+
         auth_button = self.click_on_auth_button()
         if not auth_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.log_in(account=account, repeat=repeat)
             return
+
+        print('auth_button', datetime.datetime.now())
 
         log_out_button = self.click_on_log_out_button()
         if log_out_button:
@@ -289,17 +289,18 @@ class AutoRequestCompetition(AutoRegistration):
             self.log_in(account=account, repeat=repeat)
             return
 
+        print('log_out_button', datetime.datetime.now())
         auth_form_button = self.click_on_form_auth()
         if not auth_form_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.log_in(account=account, repeat=repeat)
             return
-
+        print('auth_form_button', datetime.datetime.now())
         pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
         time.sleep(1)
-        check_not_registr_account = self.custom_delay('image_to_check/first_name.png', delay=5)
+        check_not_registr_account = self.custom_delay('image_to_check/first_name.png', delay=4)
         if check_not_registr_account:
             # можно доделать, чтобы сразу регистрировал тогда аккаунт этот
             self.close_browser_tab()
@@ -309,7 +310,7 @@ class AutoRequestCompetition(AutoRegistration):
         pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
 
-        account_button = self.custom_delay(image_path='image_to_check/account_button.png', delay=5)
+        account_button = self.custom_delay(image_path='image_to_check/account_button.png')
         if not account_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
@@ -335,7 +336,6 @@ class AutoRequestCompetition(AutoRegistration):
                 random.randint(start_y_coordinate, start_y_coordinate + 25))
 
     def request_to_competition(self, competition: pd, repeat=3) -> None:
-        # self.log_in(index_account)
         self.load_page(competition.page)
 
         # click to EnterDraw button on centre screen
@@ -409,16 +409,14 @@ class AutoRequestCompetition(AutoRegistration):
 
 
 class AutoRegistrationArrayAccount(AutoRegistration, Backup):
+    """Class for registration on site many accounts with address and card"""
     backup_data = pd.DataFrame(
         columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
                  'contact_number', 'address_line', 'town', 'postcode'])
     _file_output = 'registered_accounts.csv'
 
-    def _to_csv(self) -> None:
-        self._data.to_csv(self._file_output, encoding='utf-8-sig', sep=';', index=False)
-
     def registration_many_accounts(self):
-        data = self.db_class.read_file(self.db_class.db_auth)
+        data = self.db_class.read_file(self.db_class.db_sign_up_accounts)
 
         name_backup = 'request_to_competition'
         backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
@@ -451,21 +449,19 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
                 progress_bar.update(1)
 
             vpn.disconnect()
-        self._to_csv()
+        self.db_class.to_csv(backup_data, file_output=self._file_output)
 
 
 class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
+    """Class for request many account yo many competition"""
     backup_data = pd.DataFrame(
         columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
                  'contact_number', 'address_line', 'town', 'postcode', 'number_competition',
                  'not_request_to_competition'])
     _file_output = 'requests_competition_accounts.csv'
 
-    def _to_csv(self) -> None:
-        self._data.to_csv(self._file_output, encoding='utf-8-sig', sep=';', index=False)
-
     def request_many_competition(self):
-        data = self.db_class.read_file(self.db_class.db_auth)
+        data = self.db_class.read_file(self.db_class.db_sign_in_accounts)
 
         name_backup = 'request_to_competition'
         backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
@@ -510,7 +506,7 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                 except Exception as e:
                     print(f'Не зарегистрировал {account.email}', e)
 
-        self._to_csv()
+        self.db_class.to_csv(backup_data, file_output=self._file_output)
 
 
 if __name__ == '__main__':
