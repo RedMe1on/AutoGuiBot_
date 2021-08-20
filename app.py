@@ -55,6 +55,7 @@ class AutoRegistration(PagMixin):
 
     def sign_up(self, account: pd, repeat=2):
         """Скрипт для прохождения первой регистрации"""
+        start_repeat = repeat
         if self.display_size.width == 1920:
             self.load_page(self.main_page)
 
@@ -93,7 +94,7 @@ class AutoRegistration(PagMixin):
             pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
             pag.press('enter')
 
-            self.add_address_to_account(account)
+            self.add_address_to_account(account, repeat=start_repeat)
         else:
             raise WrongDisplaySize('Ширина экрана не равна 1920')
 
@@ -101,7 +102,7 @@ class AutoRegistration(PagMixin):
         """Добавляет адресс в профиль аккаунта"""
         # webbrowser.open("https://www.endclothing.com/ru/account")
         # time.sleep(random.randint(7, 10))
-
+        start_repeat = repeat
         # click Account button to /account
         account_button = self.custom_delay(image_path='image_to_check/account_button.png', delay=5)
         if not account_button:
@@ -173,10 +174,13 @@ class AutoRegistration(PagMixin):
             self.add_address_to_account(account=account, repeat=repeat)
             return
 
-        self.add_card_to_account(account)
+        self.add_card_to_account(account, repeat=start_repeat)
 
     def add_card_to_account(self, account: pd, repeat=2) -> None:
         """Добавляет карту в профиль аккаунта"""
+
+        start_repeat = repeat  # need for same repeat for all function
+
         card_left_menu_button = self.click_on_left_menu_card()
         if not card_left_menu_button:
             self.close_browser_tab()
@@ -224,7 +228,7 @@ class AutoRegistration(PagMixin):
             return
 
         self.close_browser_tab()
-        self.log_out()
+        self.log_out(repeat=start_repeat)
 
     def log_out(self, repeat=3) -> None:
         self.load_page(self.main_page)
@@ -270,7 +274,6 @@ class AutoRequestCompetition(AutoRegistration):
 
     def log_in(self, account: pd, repeat=3):
         """Login on site"""
-        print('log_in', datetime.datetime.now())
         self.load_page(self.main_page)
 
         auth_button = self.click_on_auth_button()
@@ -280,8 +283,6 @@ class AutoRequestCompetition(AutoRegistration):
             self.log_in(account=account, repeat=repeat)
             return
 
-        print('auth_button', datetime.datetime.now())
-
         log_out_button = self.click_on_log_out_button()
         if log_out_button:
             self.close_browser_tab()
@@ -289,14 +290,13 @@ class AutoRequestCompetition(AutoRegistration):
             self.log_in(account=account, repeat=repeat)
             return
 
-        print('log_out_button', datetime.datetime.now())
         auth_form_button = self.click_on_form_auth()
         if not auth_form_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
             self.log_in(account=account, repeat=repeat)
             return
-        print('auth_form_button', datetime.datetime.now())
+
         pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
         time.sleep(1)
@@ -413,10 +413,10 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
     backup_data = pd.DataFrame(
         columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
                  'contact_number', 'address_line', 'town', 'postcode'])
-    _file_output = 'registered_accounts.csv'
+    _file_output = 'result/registered_accounts.csv'
 
-    def registration_many_accounts(self):
-        data = self.db_class.read_file(self.db_class.db_sign_up_accounts)
+    def registration_many_accounts(self, path_to_file: str, change_vpn=5, repeat=2):
+        data = self.db_class.read_file(path_to_file)
 
         name_backup = 'request_to_competition'
         backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
@@ -430,10 +430,10 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
             index = 0
             for account in data.itertuples():
                 index += 1
-                if index % 5 == 0:
+                if index % change_vpn == 0:
                     vpn.reconnect_in_browser()
                 try:
-                    self.sign_up(account)
+                    self.sign_up(account, repeat=repeat)
 
                     # backup save
                     backup_data = backup_data.append(
@@ -458,10 +458,10 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
         columns=['email', 'password', 'card_number', 'expires', 'security_code', 'first_name', 'last_name',
                  'contact_number', 'address_line', 'town', 'postcode', 'number_competition',
                  'not_request_to_competition'])
-    _file_output = 'requests_competition_accounts.csv'
+    _file_output = 'result/requests_competition_accounts.csv'
 
-    def request_many_competition(self):
-        data = self.db_class.read_file(self.db_class.db_sign_in_accounts)
+    def request_many_competition(self, path_to_file: str, change_vpn=5, repeat=2):
+        data = self.db_class.read_file(path_to_file)
 
         name_backup = 'request_to_competition'
         backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
@@ -475,16 +475,16 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
             index = 0
             for account in data.itertuples():
                 index += 1
-                if index % 2 == 0:
+                if index % change_vpn == 0:
                     vpn.reconnect_in_browser()
                 try:
-                    self.log_in(account=account)
+                    self.log_in(account=account, repeat=repeat)
 
                     number_competition = 0
                     not_request_to_competition = []
                     for competition in self.db_class.read_file(self.db_class.db_competition).itertuples():
                         try:
-                            self.request_to_competition(competition, repeat=1)
+                            self.request_to_competition(competition, repeat=repeat)
                             self.close_browser_tab()
                             number_competition += 1
                         except Exception as e:
@@ -501,7 +501,7 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                         ignore_index=True)
                     Backup().backup_create(data=backup_data, name_backup='request_to_competition')
 
-                    self.log_out()
+                    self.log_out(repeat=repeat)
                     progress_bar.update(1)
                 except Exception as e:
                     print(f'Не зарегистрировал {account.email}', e)
