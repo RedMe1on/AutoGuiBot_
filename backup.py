@@ -3,6 +3,8 @@ from typing import Union
 
 import pandas as pd
 
+from settings import PATH_TO_BACKUP
+
 
 class Backup:
     """Backup class"""
@@ -12,10 +14,10 @@ class Backup:
         self._data = False
 
     def backup_create(self, data: pd, name_backup: str) -> None:
-        data.to_pickle(f'backup/backup_{name_backup}_{self._date}.p')
+        data.to_pickle(PATH_TO_BACKUP + f'backup_{name_backup}_{self._date}.p')
 
     def backup_load(self, name_backup: str) -> pd:
-        return pd.read_pickle(f'backup/backup_{name_backup}_{self._date}.p')
+        return pd.read_pickle(PATH_TO_BACKUP + f'backup_{name_backup}_{self._date}.p')
 
     def backup_check(self, name_backup: str, backup_empty_default: pd) -> pd:
         try:

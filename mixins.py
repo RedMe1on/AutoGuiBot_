@@ -11,6 +11,7 @@ from pyscreeze import Box
 import parse_size
 from GenerateAccount import DbInfoAccount
 from exceptions import WrongDisplaySize, WrongSearchImage
+from settings import PATH_TO_IMAGE
 
 
 class PagMixin:
@@ -45,11 +46,11 @@ class PagMixin:
     def close_browser_tab() -> None:
         pag.hotkey('ctrl', 'w')
 
-    def load_page(self, page: str, logo='image_to_check/logo_site.png') -> None:
+    def load_page(self, page: str, logo=PATH_TO_IMAGE + 'logo_site.png') -> None:
         webbrowser.open(page)
         self.custom_delay(logo)
 
-    def custom_delay(self, image_path: str, delay=10):
+    def custom_delay(self, image_path: str, delay=30):
         """Optimized delay for image"""
         button = None
         while delay > 0 and not button:

@@ -3,8 +3,8 @@ from PyQt5 import QtWidgets
 
 from design.py.main_window_form import Ui_MainWindow
 from design.py.registration_competition_form import Ui_RegistrCompetitions
-from registr_accounts_qt import RegistAccountsQt
-from registr_competition_qt import RegistrCompetitionsQt
+from .registr_accounts_qt import RegistAccountsQt
+from .registr_competition_qt import RegistrCompetitionsQt
 
 
 class App(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -15,9 +15,6 @@ class App(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.button_registr_accounts.clicked.connect(self.registr_accounts_click)
         self.button_registr_competitions.clicked.connect(self.registr_competitions_click)
-
-    def button(self):
-        self.pushButton.clicked.connect(self.b)
 
     def registr_accounts_click(self):
         dlg = RegistAccountsQt()
@@ -33,6 +30,7 @@ def main():
     window = App()  # Создаём объект класса ExampleApp
     window.show()  # Показываем окно
     app.exec_()
+
 
 
 if __name__ == '__main__':  # Если мы запускаем файл напрямую, а не импортируем
