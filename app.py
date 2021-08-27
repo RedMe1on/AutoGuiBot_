@@ -235,7 +235,6 @@ class AutoRegistration(PagMixin):
         self.load_page(self.main_page)
         time.sleep(2)
         auth_button = self.click_on_auth_button()
-        print(auth_button)
         if not auth_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
