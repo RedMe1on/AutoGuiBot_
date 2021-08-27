@@ -5,9 +5,9 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from loguru import logger
 
-from app import AutoRequestArrayCompetition
+from console_app.app import AutoRequestArrayCompetition
 from design.py.registration_competition_form import Ui_RegistrCompetitions
-from settings import PATH_TO_LOG
+from console_app.settings import PATH_TO_LOG
 
 PATH_TO_LOG_COMPETITION = PATH_TO_LOG + 'log_competition.txt'
 

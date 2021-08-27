@@ -2,9 +2,8 @@ import sys  # sys нужен для передачи argv в QApplication
 from PyQt5 import QtWidgets
 
 from design.py.main_window_form import Ui_MainWindow
-from design.py.registration_competition_form import Ui_RegistrCompetitions
-from registr_accounts_qt import RegistAccountsQt
-from registr_competition_qt import RegistrCompetitionsQt
+from qt_views.registr_accounts_qt import RegistAccountsQt
+from qt_views.registr_competition_qt import RegistrCompetitionsQt
 
 
 class App(QtWidgets.QMainWindow, Ui_MainWindow):

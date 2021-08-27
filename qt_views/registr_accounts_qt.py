@@ -1,13 +1,11 @@
 import os
 import sys
-import time
-import threading
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from loguru import logger
 from PyQt5 import QtWidgets
-from app import AutoRegistrationArrayAccount
+from console_app.app import AutoRegistrationArrayAccount
 from design.py.registration_account_form import Ui_RegistrAccounts
-from settings import PATH_TO_LOG
+from console_app.settings import PATH_TO_LOG
 
 PATH_TO_LOG_REGISTR = PATH_TO_LOG + 'log_registration.txt'
 

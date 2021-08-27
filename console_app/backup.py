@@ -1,9 +1,8 @@
 import datetime
-from typing import Union
 
 import pandas as pd
 
-from settings import PATH_TO_BACKUP
+from console_app.settings import PATH_TO_BACKUP
 
 
 class Backup:

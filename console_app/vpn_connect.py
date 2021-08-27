@@ -1,11 +1,5 @@
-from typing import Union
-
-import pyautogui as pag
-import webbrowser
-import time
-
-from mixins import PagMixin
-from settings import PATH_TO_IMAGE
+from console_app.mixins import PagMixin
+from console_app.settings import PATH_TO_IMAGE
 
 
 class TouchVPN(PagMixin):

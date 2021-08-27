@@ -1,18 +1,16 @@
-import datetime
-
 import pyautogui as pag
 import time
 import random
 import pandas as pd
 from tqdm import tqdm
 from loguru import logger
-import parse_size
-from GenerateAccount import DbInfoAccount
-from backup import Backup
-from exceptions import WrongDisplaySize, WrongSearchImage, WrongSize
-from mixins import PagMixin
-from settings import PATH_TO_IMAGE, PATH_TO_RESULT
-from vpn_connect import TouchVPN
+from console_app import parse_size
+from console_app.GenerateAccount import DbInfoAccount
+from console_app.backup import Backup
+from console_app.exceptions import WrongDisplaySize, WrongSearchImage, WrongSize
+from console_app.mixins import PagMixin
+from console_app.settings import PATH_TO_IMAGE, PATH_TO_RESULT
+from console_app.vpn_connect import TouchVPN
 
 
 class AutoRegistration(PagMixin):

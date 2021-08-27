@@ -1,17 +1,13 @@
-import datetime
 from typing import Union
 
 import pyautogui as pag
 import webbrowser
 import time
 import random
-import pandas as pd
 from pyscreeze import Box
 
-import parse_size
-from GenerateAccount import DbInfoAccount
-from exceptions import WrongDisplaySize, WrongSearchImage
-from settings import PATH_TO_IMAGE
+from console_app.exceptions import WrongSearchImage
+from console_app.settings import PATH_TO_IMAGE
 
 
 class PagMixin:

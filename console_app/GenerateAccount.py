@@ -2,8 +2,6 @@ import pandas as pd
 import random
 from typing import NamedTuple, List
 
-from exceptions import OutOfIndexFromDB
-
 
 class Name(NamedTuple):
     first_name: str
@@ -35,9 +33,6 @@ class CompetitionInfo(NamedTuple):
 class DbInfoAccount:
     """get info from file or database for account"""
     db_name = 'db_name.csv'
-    db_sign_up_accounts = 'db_sign_up_accounts.csv'
-    db_sign_in_accounts = 'db_sign_in_accounts.csv'
-    db_competition = 'db_competition.csv'
 
     @staticmethod
     def read_file(file: str, encoding='windows-1251', sep=';'):
@@ -63,5 +58,5 @@ class DbInfoAccount:
 
 
 if __name__ == '__main__':
-    pk = pd.read_csv('db_sign_up_accounts.csv', encoding='windows-1251', sep=';')
+    pk = pd.read_csv('../example_files/db_sign_up_accounts.csv', encoding='windows-1251', sep=';')
     print(DbInfoAccount().get_competition_info(0).sizes[0])
