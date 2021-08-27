@@ -59,16 +59,6 @@ class PagMixin:
             delay -= 1
         return button
 
-    def click_on_button(self, image_path: str, time_sleep=2) -> bool:
-        location = self.search_screen(image_path)
-        if location:
-            self.click_on_x_y(random.randint(location.left + 1, location.left + (location.width - 1)),
-                              random.randint(location.top + 1, location.top + (location.height - 1)))
-            time.sleep(time_sleep)
-            return True
-        else:
-            return False
-
     def click_and_get_coordinate_button(self, image_path: str, time_sleep=2, confidence=0.8) -> Union[Box, None]:
         location = self.search_screen(image_path, confidence=confidence)
         if location:
@@ -77,12 +67,10 @@ class PagMixin:
             time.sleep(time_sleep)
         return location
 
-    def click_on_form_with_field(self, from_image_path: str, speed=0.25) -> bool:
+    def click_on_form_with_field(self, from_image_path: str, speed=0.25) -> Union[Box, None]:
         form = self.search_screen(from_image_path)
         if form:
             # click on form and tab to email field
             self.click_on_x_y(form.left + 5, form.top + 5, speed=speed)
             pag.press('tab')
-            return True
-        else:
-            return False
+        return form

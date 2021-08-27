@@ -22,13 +22,13 @@ class AutoRegistration(PagMixin):
     main_page = "https://www.endclothing.com/"
 
     def click_on_auth_button(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'auth_button.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'auth_button.png')
 
     def click_on_log_out_button(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'log_out_button.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'log_out_button.png')
 
     def click_on_save_button(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'save_button.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'save_button.png')
 
     def click_on_form_auth(self):
         return self.click_on_form_with_field(PATH_TO_IMAGE + 'form_auth.png')
@@ -40,19 +40,19 @@ class AutoRegistration(PagMixin):
         return self.click_on_form_with_field(PATH_TO_IMAGE + 'card_form.png')
 
     def click_on_add_card(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'add_new_card.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'add_new_card.png')
 
     def click_on_account_button(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'account_button.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'account_button.png')
 
     def click_on_left_menu_address(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'left_menu_address.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'left_menu_address.png')
 
     def click_on_left_menu_card(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'left_menu_card.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'left_menu_card.png')
 
     def click_on_add_address(self):
-        return self.click_on_button(PATH_TO_IMAGE + 'add_address.png')
+        return self.click_and_get_coordinate_button(PATH_TO_IMAGE + 'add_address.png')
 
     def sign_up(self, account: pd, repeat=2):
         """Скрипт для прохождения первой регистрации"""
@@ -233,7 +233,7 @@ class AutoRegistration(PagMixin):
 
     def log_out(self, repeat=3) -> None:
         self.load_page(self.main_page)
-        print('Log out')
+        time.sleep(2)
         auth_button = self.click_on_auth_button()
         print(auth_button)
         if not auth_button:
@@ -241,7 +241,6 @@ class AutoRegistration(PagMixin):
             repeat = self.decrement_repeat_counter(repeat)
             self.log_out(repeat=repeat)
             return
-        print('Log out 2')
         form_auth = self.custom_delay(image_path=PATH_TO_IMAGE + 'form_auth.png', delay=3)
         if not form_auth:
             log_out_button = self.click_on_log_out_button()
@@ -250,9 +249,7 @@ class AutoRegistration(PagMixin):
                 repeat = self.decrement_repeat_counter(repeat)
                 self.log_out(repeat=repeat)
                 return
-        print('Log out 3')
         self.close_browser_tab()
-        print('Log out 4')
 
 
 class AutoRequestCompetition(AutoRegistration):
@@ -303,13 +300,18 @@ class AutoRequestCompetition(AutoRegistration):
 
         pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
-        time.sleep(1)
-        check_not_registr_account = self.custom_delay(PATH_TO_IMAGE + 'first_name.png', delay=4)
+        check_not_registr_account = self.custom_delay(PATH_TO_IMAGE + 'first_name.png', delay=5)
         if check_not_registr_account:
             # можно доделать, чтобы сразу регистрировал тогда аккаунт этот
             self.close_browser_tab()
             raise WrongSearchImage('Аккаунт не зарегистрирован')
 
+        auth_form_button = self.click_on_form_auth()
+        if not auth_form_button:
+            self.close_browser_tab()
+            repeat = self.decrement_repeat_counter(repeat)
+            self.log_in(account=account, repeat=repeat)
+            return
         pag.press('tab')
         pag.typewrite(str(account.password), interval=random.uniform(0.1, 0.2))
         pag.press('enter')
@@ -419,14 +421,10 @@ class AutoRegistrationArrayAccount(AutoRegistration, Backup):
                  'contact_number', 'address_line', 'town', 'postcode'])
     file_output = PATH_TO_RESULT + 'registered_accounts.csv'
 
-    def __init__(self):
-        super().__init__()
-        logger.info('dsadsadas')
-
     def registration_many_accounts(self, path_to_file_accounts: str, change_vpn=5, repeat=2):
         data = self.db_class.read_file(path_to_file_accounts)
 
-        name_backup = 'request_to_competition'
+        name_backup = 'registration'
         backup_data = self.backup_check(name_backup=name_backup, backup_empty_default=self.backup_data)
         if not backup_data.empty:
             data = self.filter_data(column_merge='email', data=data, backup_data=backup_data)
@@ -469,10 +467,6 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                  'not_request_to_competition'])
     file_output = PATH_TO_RESULT + 'requests_competition_accounts.csv'
 
-    def __init__(self):
-        super().__init__()
-        logger.info('dsadsadas')
-
     def request_many_competition(self, path_to_file_accounts: str, path_to_file_competition: str, change_vpn=5,
                                  repeat=2):
         data = self.db_class.read_file(path_to_file_accounts)
@@ -504,23 +498,24 @@ class AutoRequestArrayCompetition(AutoRequestCompetition, Backup):
                             not_request_to_competition.append(competition.page)
                             logger.info(f'Не зарегистрировал {account.email} на конкурс {competition.page}: {e}')
                             print(f'Не зарегистрировал {account.email} на конкурс {competition.page}: {e}')
-                    backup_data = backup_data.append(
-                        {"email": account.email, 'password': account.password,
-                         'card_number': account.card_number,
-                         'expires': account.expires, 'security_code': account.security_code,
-                         'first_name': account.first_name, 'last_name': account.last_name,
-                         'contact_number': account.contact_number, 'address_line': account.address_line,
-                         'town': account.town, 'postcode': account.postcode, 'number_competition': number_competition,
-                         'not_request_to_competition': not_request_to_competition},
-                        ignore_index=True)
-                    Backup().backup_create(data=backup_data, name_backup='request_to_competition')
+                        backup_data = backup_data.append(
+                            {"email": account.email, 'password': account.password,
+                             'card_number': account.card_number,
+                             'expires': account.expires, 'security_code': account.security_code,
+                             'first_name': account.first_name, 'last_name': account.last_name,
+                             'contact_number': account.contact_number, 'address_line': account.address_line,
+                             'town': account.town, 'postcode': account.postcode,
+                             'number_competition': number_competition,
+                             'not_request_to_competition': not_request_to_competition},
+                            ignore_index=True)
+                        Backup().backup_create(data=backup_data, name_backup='request_to_competition')
 
                     self.log_out(repeat=repeat)
                     progress_bar.update(1)
                 except Exception as e:
                     logger.error(f'Не зарегистрировал {account.email}:{e}')
                     print(f'Не зарегистрировал {account.email}', e)
-
+            vpn.disconnect()
         self.db_class.to_csv(backup_data, file_output=self.file_output)
 
 
