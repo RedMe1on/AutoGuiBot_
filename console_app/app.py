@@ -79,7 +79,7 @@ class AutoRegistration(PagMixin):
             pag.typewrite(str(account.email), interval=random.uniform(0.1, 0.2))
             pag.press('enter')
             time.sleep(1)
-            first_name_field = self.custom_delay(image_path=PATH_TO_IMAGE + 'first_name.png', delay=3)
+            first_name_field = self.custom_delay(image_path=PATH_TO_IMAGE + 'first_name.png', delay=10)
             if not first_name_field:
                 self.close_browser_tab()
                 raise WrongSearchImage('Аккаунт зарегистрирован')
@@ -103,7 +103,7 @@ class AutoRegistration(PagMixin):
         # time.sleep(random.randint(7, 10))
         start_repeat = repeat
         # click Account button to /account
-        account_button = self.custom_delay(image_path=PATH_TO_IMAGE + 'account_button.png', delay=5)
+        account_button = self.custom_delay(image_path=PATH_TO_IMAGE + 'account_button.png', delay=10)
         if not account_button:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)
@@ -164,7 +164,7 @@ class AutoRegistration(PagMixin):
             self.add_address_to_account(account=account, repeat=repeat)
             return
 
-        success_add_address = self.custom_delay(PATH_TO_IMAGE + 'success_add_address.png', delay=6)
+        success_add_address = self.custom_delay(PATH_TO_IMAGE + 'success_add_address.png', delay=10)
         if not success_add_address:
             self.close_browser_tab()
             repeat = self.decrement_repeat_counter(repeat)

@@ -2,6 +2,8 @@ import pandas as pd
 import random
 from typing import NamedTuple, List
 
+from console_app.settings import PATH_TO_DB_NAME
+
 
 class Name(NamedTuple):
     first_name: str
@@ -32,7 +34,7 @@ class CompetitionInfo(NamedTuple):
 
 class DbInfoAccount:
     """get info from file or database for account"""
-    db_name = 'db_name.csv'
+    db_name = PATH_TO_DB_NAME + 'db_name.csv'
 
     @staticmethod
     def read_file(file: str, encoding='windows-1251', sep=';'):

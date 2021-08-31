@@ -24,6 +24,7 @@ a.datas += Tree('C:\\Users\\lalko\\PycharmProjects\\AutoGuiBot_\\result', prefix
 a.datas += Tree('C:\\Users\\lalko\\PycharmProjects\\AutoGuiBot_\\console_app', prefix='console_app\\')
 a.datas += Tree('C:\\Users\\lalko\\PycharmProjects\\AutoGuiBot_\\backup', prefix='console_app\\')
 a.datas += Tree('C:\\Users\\lalko\\PycharmProjects\\AutoGuiBot_\\qt_views', prefix='qt_views\\')
+a.datas += Tree('C:\\Users\\lalko\\PycharmProjects\\AutoGuiBot_\\example_files', prefix='example_files\\')
 
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
@@ -37,7 +38,7 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False,
+          console=True,
           disable_windowed_traceback=False,
           target_arch=None,
           codesign_identity=None,
